@@ -20,8 +20,10 @@
     "express-session": "^1.18.0",
     "multer": "^2.2.0",
     "nodemailer": "^9.0.3",
-    "puppeteer": "^25.3.0",
     "stripe": "^22.3.2",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.3.0"
   }
 }

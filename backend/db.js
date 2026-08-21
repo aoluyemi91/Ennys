@@ -3,8 +3,11 @@ const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
 const slugify = require('./lib/slugify');
 
-const DB_PATH = path.join(__dirname, 'data', 'ennys.db');
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+// DATA_DIR lets a host with ephemeral container storage (e.g. Render) point
+// this at a mounted persistent disk instead of the default in-repo folder.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const DB_PATH = path.join(DATA_DIR, 'ennys.db');
+fs.mkdirSync(DATA_DIR, { recursive: true });
 const db = new DatabaseSync(DB_PATH, { enableForeignKeyConstraints: true });
 db.exec('PRAGMA journal_mode = WAL');
 

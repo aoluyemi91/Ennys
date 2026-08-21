@@ -92,6 +92,9 @@ app.get('/admin/invoice', requireAuthPage, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'invoice.html'));
 });
 
+// Served explicitly (rather than relying on it living inside public/) because
+// UPLOADS_DIR can point at a mounted persistent disk outside the repo in production.
+app.use('/uploads', express.static(process.env.UPLOADS_DIR || path.join(__dirname, 'public', 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(errorHandler);

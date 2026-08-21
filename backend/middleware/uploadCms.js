@@ -3,7 +3,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');
 
-const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'cms');
+const UPLOADS_ROOT = process.env.UPLOADS_DIR || path.join(__dirname, '..', 'public', 'uploads');
+const UPLOAD_DIR = path.join(UPLOADS_ROOT, 'cms');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);

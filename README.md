@@ -103,6 +103,16 @@ Run from `backend/`:
   panel rather than hardcoded.
 - **Promotions** — promo codes with usage tracking, applied at checkout.
 
+## Deployment
+
+This is a real Node.js + SQLite app, not a static site — it needs a host
+that runs a persistent server process with persistent disk storage (GitHub
+Pages can't run any of this). `render.yaml` at the repo root is a ready-to-go
+[Render](https://render.com) Blueprint. See
+[workflows/deploy-to-render.md](workflows/deploy-to-render.md) for the
+step-by-step setup, including how the database and uploaded images are kept
+on a persistent disk.
+
 ## Notes
 
 - The SQLite database (`backend/data/ennys.db`) and uploaded images
