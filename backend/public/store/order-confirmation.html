@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Order Confirmed — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+</head>
+<body>
+<div id="siteHeader"></div>
+
+<main class="container" style="padding:50px 0 70px;max-width:560px">
+  <div id="content" class="form-card" style="max-width:none;text-align:center">
+    <div class="skeleton" style="height:120px"></div>
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+(async () => {
+  const orderId = new URLSearchParams(location.search).get('orderId');
+  const el = document.getElementById('content');
+  try {
+    const order = await apiFetch(`/api/account/orders/${orderId}`);
+    el.innerHTML = `
+      <div style="font-size:44px;margin-bottom:10px">✅</div>
+      <h1 style="font-size:22px;margin-bottom:6px">Thank you for your order!</h1>
+      <p style="color:var(--muted);font-size:13.5px;margin-bottom:20px">Order <span class="num" style="color:var(--pri);font-weight:800">${order.order_number}</span> is confirmed and being processed.</p>
+      <div style="text-align:left;border-top:1px solid var(--line);padding-top:16px">
+        ${order.items.map(i => `
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0">
+            <span>${i.quantity} × ${i.product_name}${i.variation_summary ? ` (${i.variation_summary})` : ''}</span>
+            <span>${money(i.line_total)}</span>
+          </div>
+        `).join('')}
+        <div class="summary-row total"><span>Total Paid</span><span>${money(order.total)}</span></div>
+      </div>
+      <a href="/store/shop.html" class="btn btn-pri btn-full" style="margin-top:20px">Continue Shopping</a>
+      <a href="/store/account.html" class="btn btn-outline btn-full" style="margin-top:10px">View Order History</a>
+    `;
+  } catch {
+    el.innerHTML = `<div class="empty-state"><div class="ic">❓</div>Order not found</div>`;
+  }
+})();
+</script>
+</body>
+</html>

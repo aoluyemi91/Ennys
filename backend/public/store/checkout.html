@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Checkout — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+<script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+<div id="siteHeader"></div>
+
+<main class="container" style="padding:28px 0 60px">
+  <h1 style="font-size:26px;margin-bottom:20px">Checkout</h1>
+  <div class="two-col">
+    <div>
+      <div class="form-card" style="max-width:none;margin:0 0 20px">
+        <h3 style="font-size:15px;margin-bottom:16px">Delivery Address</h3>
+        <div class="form-error" id="formError"></div>
+        <div class="fg"><label>Address Line 1</label><input id="addrLine1" required></div>
+        <div class="fg"><label>Address Line 2 (optional)</label><input id="addrLine2"></div>
+        <div class="form-row">
+          <div class="fg"><label>City</label><input id="addrCity" required></div>
+          <div class="fg"><label>Postcode</label><input id="addrPostcode" required></div>
+        </div>
+        <div class="fg"><label>Phone</label><input id="addrPhone" required></div>
+      </div>
+      <div class="form-card" style="max-width:none">
+        <h3 style="font-size:15px;margin-bottom:16px">Payment</h3>
+        <div id="paymentElement"></div>
+        <div id="paymentError" style="color:var(--danger);font-size:13px;margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div id="checkoutItems"></div>
+      <div class="summary-row" id="sumWeightRow" style="display:none"><span>Total Weight</span><span id="sumWeight"></span></div>
+      <div class="summary-row"><span>Subtotal</span><span id="sumSubtotal">£0.00</span></div>
+      <div class="summary-row"><span>Delivery</span><span id="sumDelivery">£0.00</span></div>
+      <div class="summary-row" id="sumDiscountRow" style="display:none"><span>Discount</span><span id="sumDiscount"></span></div>
+      <div class="summary-row total"><span>Total</span><span id="sumTotal">£0.00</span></div>
+      <button class="btn btn-pri btn-full" id="payBtn" style="margin-top:16px">Pay Now →</button>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px" id="paymentHint">Test mode — use card 4242 4242 4242 4242, any future date/CVC.</p>
+    </div>
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+let stripe, elements, ORDER_INFO;
+
+async function checkAuth() {
+  const session = await apiFetch('/api/account/session');
+  if (!session || !session.loggedIn) {
+    location.href = '/store/login.html?next=/store/checkout.html';
+    return false;
+  }
+  return true;
+}
+
+async function prefillAddress() {
+  const profile = await apiFetch('/api/account/profile');
+  if (profile.addressLine1) document.getElementById('addrLine1').value = profile.addressLine1;
+  if (profile.addressLine2) document.getElementById('addrLine2').value = profile.addressLine2;
+  if (profile.city) document.getElementById('addrCity').value = profile.city;
+  if (profile.postcode) document.getElementById('addrPostcode').value = profile.postcode;
+  if (profile.phone) document.getElementById('addrPhone').value = profile.phone;
+}
+
+function buildCartPayload() {
+  return getCart().map(l => ({ productId: l.productId, variationId: l.variationId, quantity: l.quantity }));
+}
+
+function formatWeight(grams) {
+  return grams >= 1000 ? `${(grams / 1000).toFixed(2).replace(/\.?0+$/, '')} kg` : `${grams} g`;
+}
+
+async function renderItemsPreview() {
+  const items = buildCartPayload();
+  if (items.length === 0) { location.href = '/store/cart.html'; return; }
+  let html = '';
+  let totalWeight = 0;
+  for (const line of items) {
+    const p = await apiFetch(`/api/storefront/products/${line.productId}`);
+    const variation = line.variationId ? p.variations.find(v => v.id === line.variationId) : null;
+    const price = variation ? variation.price : p.price;
+    if (p.weight) totalWeight += p.weight * line.quantity;
+    html += `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0"><span>${line.quantity} × ${p.name}</span><span>${money(price * line.quantity)}</span></div>`;
+  }
+  document.getElementById('checkoutItems').innerHTML = html + '<div style="border-bottom:1px solid var(--line);margin:10px 0"></div>';
+  if (totalWeight > 0) {
+    document.getElementById('sumWeightRow').style.display = 'flex';
+    document.getElementById('sumWeight').textContent = formatWeight(totalWeight);
+  }
+}
+
+let MOCK_MODE = false;
+
+async function initPayment() {
+  const meta = JSON.parse(sessionStorage.getItem('ennys_checkout_meta') || '{}');
+  const config = await apiFetch('/api/storefront/config');
+  MOCK_MODE = !!config.mockPayments;
+  if (!MOCK_MODE) stripe = Stripe(config.stripePublishableKey);
+
+  let intentRes;
+  try {
+    intentRes = await apiFetch('/api/checkout/create-intent', {
+      method: 'POST',
+      body: JSON.stringify({
+        items: buildCartPayload(),
+        deliveryType: meta.deliveryType || 'Standard',
+        promoCode: meta.promoCode || null,
+        deliveryAddress: {
+          line1: document.getElementById('addrLine1').value,
+          line2: document.getElementById('addrLine2').value,
+          city: document.getElementById('addrCity').value,
+          postcode: document.getElementById('addrPostcode').value
+        },
+        phone: document.getElementById('addrPhone').value
+      })
+    });
+  } catch (e) {
+    document.getElementById('formError').textContent = e.message;
+    document.getElementById('formError').classList.add('show');
+    return;
+  }
+
+  ORDER_INFO = intentRes;
+  document.getElementById('sumSubtotal').textContent = money(intentRes.subtotal);
+  document.getElementById('sumDelivery').textContent = intentRes.deliveryFee === 0 ? 'FREE' : money(intentRes.deliveryFee);
+  if (intentRes.discountAmount > 0) {
+    document.getElementById('sumDiscountRow').style.display = 'flex';
+    document.getElementById('sumDiscount').textContent = '-' + money(intentRes.discountAmount);
+  }
+  document.getElementById('sumTotal').textContent = money(intentRes.total);
+
+  if (MOCK_MODE) {
+    document.getElementById('paymentElement').innerHTML =
+      '<div style="background:var(--pri-lt,#fff3ec);border:1.5px dashed var(--pri,#e65c00);border-radius:8px;padding:14px;font-size:12.5px;color:var(--pri-dk,#b84500)">' +
+      '🧪 <strong>Test payment mode</strong> — no Stripe keys are configured, so no card is charged. ' +
+      'Click "Pay Now" below to simulate a successful payment.</div>';
+    document.getElementById('paymentHint').textContent = 'No Stripe keys configured — this order will be marked paid automatically, no card details needed.';
+    return;
+  }
+
+  elements = stripe.elements({ clientSecret: intentRes.clientSecret });
+  const paymentElement = elements.create('payment');
+  paymentElement.mount('#paymentElement');
+}
+
+function currentAddressPayload() {
+  return {
+    line1: document.getElementById('addrLine1').value,
+    line2: document.getElementById('addrLine2').value,
+    city: document.getElementById('addrCity').value,
+    postcode: document.getElementById('addrPostcode').value
+  };
+}
+
+document.getElementById('payBtn').addEventListener('click', async () => {
+  if (!document.getElementById('addrLine1').value || !document.getElementById('addrCity').value || !document.getElementById('addrPostcode').value || !document.getElementById('addrPhone').value) {
+    document.getElementById('formError').textContent = 'Please complete your delivery address';
+    document.getElementById('formError').classList.add('show');
+    return;
+  }
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  btn.textContent = 'Processing…';
+
+  if (MOCK_MODE) {
+    try {
+      await apiFetch('/api/checkout/confirm', { method: 'POST', body: JSON.stringify({ orderId: ORDER_INFO.orderId, deliveryAddress: currentAddressPayload(), phone: document.getElementById('addrPhone').value }) });
+      clearCart();
+      location.href = `/store/order-confirmation.html?orderId=${ORDER_INFO.orderId}`;
+    } catch (e) {
+      document.getElementById('paymentError').textContent = e.message;
+      btn.disabled = false;
+      btn.textContent = 'Pay Now →';
+    }
+    return;
+  }
+
+  const { error } = await stripe.confirmPayment({ elements, redirect: 'if_required' });
+  if (error) {
+    document.getElementById('paymentError').textContent = error.message;
+    btn.disabled = false;
+    btn.textContent = 'Pay Now →';
+    return;
+  }
+
+  try {
+    await apiFetch('/api/checkout/confirm', { method: 'POST', body: JSON.stringify({ orderId: ORDER_INFO.orderId, deliveryAddress: currentAddressPayload(), phone: document.getElementById('addrPhone').value }) });
+    clearCart();
+    location.href = `/store/order-confirmation.html?orderId=${ORDER_INFO.orderId}`;
+  } catch (e) {
+    document.getElementById('paymentError').textContent = e.message;
+    btn.disabled = false;
+    btn.textContent = 'Pay Now →';
+  }
+});
+
+(async () => {
+  if (!(await checkAuth())) return;
+  await prefillAddress();
+  await renderItemsPreview();
+  await initPayment();
+})();
+</script>
+</body>
+</html>

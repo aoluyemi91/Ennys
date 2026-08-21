@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FAQ — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Frequently asked questions about ordering, delivery and payments at Ennys.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+</head>
+<body>
+
+<div id="siteHeader"></div>
+
+<main>
+  <section class="content-hero">
+    <div class="container">
+      <h1>Frequently Asked Questions</h1>
+      <p id="faqIntro"></p>
+    </div>
+  </section>
+
+  <section class="section container">
+    <div class="prose">
+      <section>
+        <div id="faqList"></div>
+      </section>
+
+      <section>
+        <div class="contact-block">
+          <h3>Still need help?</h3>
+          <p id="contactPhone"></p>
+          <p id="contactEmail"></p>
+          <p style="margin-top:10px"><a href="/store/help-support.html">Visit Help &amp; Support →</a></p>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+apiFetch('/api/storefront/cms/faq_page').then(f => {
+  document.getElementById('faqIntro').textContent = f.intro || '';
+  document.getElementById('faqList').innerHTML = (f.items || []).map((item, i) => `
+    <details class="faq-item" ${i === 0 ? 'open' : ''}>
+      <summary>${item.question}</summary>
+      <p>${item.answer}</p>
+    </details>
+  `).join('');
+}).catch(() => {});
+
+apiFetch('/api/storefront/cms/footer').then(f => {
+  document.getElementById('contactPhone').innerHTML = f.phone ? `📞 <a href="tel:${f.phone.replace(/\s+/g, '')}">${f.phone}</a>` : '';
+  document.getElementById('contactEmail').innerHTML = f.email ? `✉️ <a href="mailto:${f.email}">${f.email}</a>` : '';
+}).catch(() => {});
+</script>
+</body>
+</html>

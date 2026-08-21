@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Help & Support — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Answers to common questions about delivery, orders and payments at Ennys.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+</head>
+<body>
+
+<div id="siteHeader"></div>
+
+<main>
+  <section class="content-hero">
+    <div class="container">
+      <h1>Help &amp; Support</h1>
+      <p id="helpIntro"></p>
+    </div>
+  </section>
+
+  <section class="section container">
+    <div class="prose">
+      <section>
+        <h2>Quick Links</h2>
+        <ul>
+          <li><a href="/store/faq.html">Frequently Asked Questions →</a></li>
+          <li><a href="/store/delivery-returns.html">Delivery &amp; Returns →</a></li>
+          <li><a href="/store/account.html">Track an order in My Account →</a></li>
+        </ul>
+      </section>
+
+      <section>
+        <div class="contact-block">
+          <h3>Still need help?</h3>
+          <p id="contactPhone"></p>
+          <p id="contactEmail"></p>
+          <p style="margin-top:10px">We typically reply within one working day.</p>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+apiFetch('/api/storefront/cms/help_support_page').then(p => {
+  document.getElementById('helpIntro').textContent = p.intro || '';
+}).catch(() => {});
+
+apiFetch('/api/storefront/cms/footer').then(f => {
+  document.getElementById('contactPhone').innerHTML = f.phone ? `📞 <a href="tel:${f.phone.replace(/\s+/g, '')}">${f.phone}</a>` : '';
+  document.getElementById('contactEmail').innerHTML = f.email ? `✉️ <a href="mailto:${f.email}">${f.email}</a>` : '';
+}).catch(() => {});
+</script>
+</body>
+</html>

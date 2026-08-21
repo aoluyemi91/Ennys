@@ -1,0 +1,2040 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ennys — Store Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;background:#f4f5f7;color:#1a1a1a}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+:root{--pri:#e65c00;--pri-dk:#b84500;--pri-lt:#fff3ec;--sec:#2e7d32;--sec-lt:#e8f5e9;--sidebar:#1a1a1a;--sidebar-w:220px}
+
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:var(--sidebar);flex-shrink:0;display:flex;flex-direction:column;min-height:100vh}
+.sidebar-logo{padding:20px 18px 14px;border-bottom:1px solid #333}
+.logo-text{font-size:22px;font-weight:900;color:#fff;font-style:italic;letter-spacing:-1px}
+.logo-text span{color:var(--pri)}
+.logo-sub{font-size:10px;color:#666;font-weight:600;letter-spacing:.5px;margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 0}
+.nav-group-label{font-size:10px;font-weight:700;color:#555;padding:14px 18px 6px;letter-spacing:.8px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;color:#aaa;cursor:pointer;transition:.15s;border-left:3px solid transparent;font-weight:500;font-size:12px}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nav-item.act{color:#fff;background:rgba(230,92,0,.15);border-left-color:var(--pri)}
+.nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{background:var(--pri);color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;margin-left:auto}
+.sidebar-footer{padding:14px 18px;border-top:1px solid #333;font-size:11px;color:#555}
+.admin-avatar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.avatar-circle{width:30px;height:30px;border-radius:50%;background:var(--pri);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
+.logout-link{color:#888;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.logout-link:hover{color:#fff}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid #eee;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:800;color:#1a1a1a}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-btn{background:none;border:1px solid #e8e8e8;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;color:#555;display:flex;align-items:center;gap:5px;transition:.15s}
+.topbar-btn:hover{background:#f5f5f5}
+.topbar-btn.primary{background:var(--pri);color:#fff;border-color:var(--pri)}
+.topbar-btn.primary:hover{background:var(--pri-dk)}
+.content{flex:1;padding:20px 24px;overflow-y:auto}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:10px;padding:16px;border:1px solid #eee}
+.stat-label{font-size:11px;color:#888;font-weight:600;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.stat-val{font-size:26px;font-weight:800;color:#1a1a1a;margin-bottom:4px}
+.stat-change{font-size:11px;font-weight:600}
+.stat-change.up{color:#2e7d32}
+.stat-change.down{color:#e53935}
+.stat-icon{font-size:20px}
+
+.card{background:#fff;border-radius:10px;border:1px solid #eee;overflow:hidden}
+.card-head{padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:800;color:#1a1a1a}
+.card-body{padding:16px}
+
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{text-align:left;padding:9px 12px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #eee;background:#fafafa}
+.data-table td{padding:10px 12px;border-bottom:1px solid #f5f5f5;font-size:12px;color:#1a1a1a}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#fdf6f0}
+.data-table .emoji-cell{font-size:22px;width:36px;text-align:center}
+
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;white-space:nowrap}
+.badge-active{background:#e8f5e9;color:#1b5e20}
+.badge-inactive{background:#f5f5f5;color:#888}
+.badge-low{background:#fff3e0;color:#e65100}
+.badge-out{background:#fce4ec;color:#c62828}
+.badge-delivered{background:#e8f5e9;color:#1b5e20}
+.badge-processing{background:#e3f2fd;color:#0d47a1}
+.badge-shipped{background:#fff3e0;color:#e65100}
+.badge-returned{background:#fce4ec;color:#c62828}
+.badge-cancelled{background:#f5f5f5;color:#888}
+.badge-pending{background:#fff8e1;color:#f57f17}
+.badge-new{background:#fff3ec;color:#b84500}
+.badge-pct{background:#e8f5e9;color:#1b5e20}
+.badge-rejected{background:#fce4ec;color:#c62828}
+.badge-live{background:#e8f5e9;color:#1b5e20}
+.badge-scheduled{background:#fff8e1;color:#f57f17}
+.badge-ended{background:#f5f5f5;color:#888}
+.badge-expired{background:#f5f5f5;color:#888}
+.badge-disabled{background:#f5f5f5;color:#888}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select,.fg textarea{padding:8px 12px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:12px;outline:none;transition:.2s;background:#fff}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--pri)}
+.fg textarea{resize:vertical;min-height:80px}
+.fg-full{grid-column:1/-1}
+
+.btn{border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:5px}
+.btn-pri{background:var(--pri);color:#fff}
+.btn-pri:hover{background:var(--pri-dk)}
+.btn-sec{background:var(--sec);color:#fff}
+.btn-sec:hover{background:#1b5e20}
+.btn-ghost{background:#f5f5f5;color:#555;border:1px solid #e0e0e0}
+.btn-ghost:hover{background:#eee}
+.btn-danger{background:#fce4ec;color:#c62828;border:1px solid #f8bbd0}
+.btn-danger:hover{background:#f8bbd0}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-icon{background:none;border:none;padding:4px 6px;border-radius:5px;color:#888;font-size:14px;transition:.15s}
+.btn-icon:hover{background:#f0f0f0;color:#1a1a1a}
+
+.chart-wrap{height:200px;position:relative;padding:10px 0}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:160px;padding:0 8px}
+.chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.chart-bar{width:100%;border-radius:4px 4px 0 0;transition:.3s;cursor:pointer;min-height:2px}
+.chart-bar:hover{opacity:.8}
+.chart-label{font-size:9px;color:#aaa;font-weight:600}
+.chart-legend{display:flex;gap:14px;padding:8px 8px 0;font-size:10px;color:#888;font-weight:600}
+.chart-legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+
+.tabs{display:flex;gap:0;border-bottom:1px solid #eee;margin-bottom:16px}
+.tab{padding:9px 16px;font-size:12px;font-weight:600;color:#888;border-bottom:2px solid transparent;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;transition:.15s;white-space:nowrap}
+.tab.act{color:var(--pri);border-bottom-color:var(--pri)}
+.tab:hover:not(.act){color:#555}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto}
+.modal-backdrop.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;width:100%;max-width:580px}
+.modal-head{padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:15px;font-weight:800}
+.modal-close{background:none;border:none;font-size:20px;color:#aaa;cursor:pointer}
+.modal-body{padding:20px}
+.modal-foot{padding:14px 20px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px}
+
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+.filter-bar input{padding:7px 12px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:12px;outline:none;flex:1;max-width:260px}
+.filter-bar input:focus{border-color:var(--pri)}
+.filter-bar select{padding:7px 12px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:12px;outline:none;background:#fff}
+
+.toggle-sw{position:relative;width:36px;height:20px;cursor:pointer;display:inline-block}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:#ddd;border-radius:10px;transition:.2s}
+.toggle-track::after{content:'';position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
+.toggle-sw input:checked+.toggle-track{background:var(--pri)}
+.toggle-sw input:checked+.toggle-track::after{left:19px}
+
+.cms-preview{background:#f9f9f9;border:1.5px dashed #ddd;border-radius:8px;padding:14px;font-size:12px;color:#888;margin-top:8px;min-height:60px}
+.color-picker-row{display:flex;align-items:center;gap:10px}
+.color-swatch{width:32px;height:32px;border-radius:6px;border:1.5px solid #ddd;cursor:pointer}
+
+.promo-code-display{font-family:monospace;font-size:14px;font-weight:800;background:#f5f5f5;padding:4px 10px;border-radius:5px;color:#1a1a1a;letter-spacing:1px}
+
+.section-view{display:none}
+.section-view.active{display:block}
+.empty-state{text-align:center;padding:40px;color:#bbb}
+.empty-state div{font-size:40px;margin-bottom:10px}
+.activity-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;align-items:flex-start}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.activity-text{font-size:12px;color:#555;line-height:1.4}
+.activity-time{font-size:10px;color:#bbb;margin-top:2px}
+.progress-bar{height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;margin-top:4px}
+.progress-fill{height:100%;border-radius:3px;background:var(--pri);transition:.3s}
+.top-prod-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5}
+.top-prod-row:last-child{border-bottom:none}
+.top-prod-emoji{font-size:24px;width:36px;height:36px;background:#fdf6f0;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.stock-alert{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;margin-bottom:6px;font-size:11px;font-weight:600}
+.stock-alert.low{background:#fff3e0;color:#e65100;border:1px solid #ffe0b2}
+.stock-alert.out{background:#fce4ec;color:#c62828;border:1px solid #f8bbd0}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.img-placeholder{width:100%;height:100px;background:#f5f5f5;border-radius:7px;border:1.5px dashed #ddd;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#aaa;font-size:11px;gap:6px}
+.img-thumb{position:relative;width:88px;height:88px;border-radius:8px;overflow:hidden;border:1.5px solid #eee}
+.img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.img-thumb .img-remove{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.55);color:#fff;border:none;width:20px;height:20px;border-radius:50%;font-size:12px;line-height:1;cursor:pointer}
+.img-thumb .img-primary-badge{position:absolute;bottom:3px;left:3px;background:var(--pri);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px}
+.img-thumb .img-make-primary{position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.55);color:#fff;border:none;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;cursor:pointer}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;z-index:600;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+.banner-card-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5}
+.banner-card-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div style="position:relative;overflow:hidden" class="app">
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">Ennys<span>.</span></div>
+    <div class="logo-sub">Store Admin</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label">Overview</div>
+    <div class="nav-item act" onclick="nav('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</div>
+
+    <div class="nav-group-label">Store</div>
+    <div class="nav-item" onclick="nav('catalogue',this)"><span class="nav-icon">📦</span>Catalogue</div>
+    <div class="nav-item" onclick="nav('sales',this)"><span class="nav-icon">🛒</span>Orders & Sales<span class="nav-badge" id="ordersBadge">0</span></div>
+    <div class="nav-item" onclick="nav('returns',this)"><span class="nav-icon">↩️</span>Returns<span class="nav-badge" id="returnsBadge">0</span></div>
+    <div class="nav-item" onclick="nav('customers',this)"><span class="nav-icon">👥</span>Customers</div>
+
+    <div class="nav-group-label">Marketing</div>
+    <div class="nav-item" onclick="nav('promotions',this)"><span class="nav-icon">🏷️</span>Promotions</div>
+
+    <div class="nav-group-label">Content</div>
+    <div class="nav-item" onclick="nav('cms',this)"><span class="nav-icon">✏️</span>CMS — Website</div>
+    <div class="nav-item" onclick="nav('settings',this)"><span class="nav-icon">⚙️</span>Settings</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="admin-avatar">
+      <div class="avatar-circle" id="avatarInitials">EA</div>
+      <div>
+        <div style="font-size:11px;color:#fff;font-weight:700" id="adminUsername">Ennys Admin</div>
+        <div style="font-size:10px;color:#555">Super Admin</div>
+      </div>
+    </div>
+    <span class="logout-link" onclick="logout()">🚪 Log out</span>
+  </div>
+</div>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div class="topbar-right">
+      <div style="font-size:11px;color:#888;display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;background:#2e7d32;border-radius:50%;display:inline-block"></span>Storefront Live</div>
+      <button class="topbar-btn" onclick="toast('Syncing with storefront...')">🔄 Sync</button>
+      <button class="topbar-btn primary" onclick="document.querySelectorAll('.nav-item')[1].click();openAddProduct()">+ Add Product</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+  <!-- ══════ DASHBOARD ══════ -->
+  <div id="sec-dashboard" class="section-view active">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Today's Revenue <span class="stat-icon">💰</span></div>
+        <div class="stat-val" id="statRevenue">£0</div>
+        <div class="stat-change" id="statRevenueChange"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Orders Today <span class="stat-icon">🛒</span></div>
+        <div class="stat-val" id="statOrders">0</div>
+        <div class="stat-change" id="statOrdersChange"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Products <span class="stat-icon">📦</span></div>
+        <div class="stat-val" id="statProducts">0</div>
+        <div class="stat-change" style="color:#888" id="statLowStock"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Order Value <span class="stat-icon">📈</span></div>
+        <div class="stat-val" id="statAov">£0</div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:14px">
+      <div class="card" style="grid-column:1/2">
+        <div class="card-head">
+          <div class="card-title">Revenue — Last 7 Days</div>
+        </div>
+        <div class="card-body" style="padding:10px 16px">
+          <div class="chart-wrap">
+            <div class="chart-bars" id="revenueChart"></div>
+            <div class="chart-legend"><span><span class="chart-legend-dot" style="background:#e65c00"></span>Revenue</span><span><span class="chart-legend-dot" style="background:#2e7d32"></span>Orders</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">Top Selling Products</div><button class="btn btn-ghost btn-sm" onclick="document.querySelectorAll('.nav-item')[1].click()">View All</button></div>
+        <div class="card-body" style="padding:0 16px">
+          <div id="topProdsWidget"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Recent Orders</div><button class="btn btn-ghost btn-sm" onclick="document.querySelectorAll('.nav-item')[2].click()">View All</button></div>
+        <table class="data-table">
+          <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="recentOrdersTable"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card">
+          <div class="card-head"><div class="card-title">⚠️ Stock Alerts</div></div>
+          <div class="card-body" id="stockAlerts"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">Activity Feed</div></div>
+          <div class="card-body" style="padding:8px 16px" id="activityFeed"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ CATALOGUE ══════ -->
+  <div id="sec-catalogue" class="section-view">
+    <div class="filter-bar">
+      <input type="text" id="catSearch" placeholder="Search products..." oninput="debouncedLoadCatalogue()">
+      <select id="catCatFilter" onchange="loadCatalogue()">
+        <option value="">All Categories</option>
+      </select>
+      <select id="catStatusFilter" onchange="loadCatalogue()">
+        <option value="">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option>
+      </select>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="btn btn-pri" onclick="openAddProduct()">+ Add Product</button>
+      </div>
+    </div>
+    <div class="card">
+      <table class="data-table" id="catalogueTable">
+        <thead><tr><th></th><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Sales</th><th>Status</th><th>Flags</th><th>Actions</th></tr></thead>
+        <tbody id="catalogueBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════ SALES ══════ -->
+  <div id="sec-sales" class="section-view">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+      <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-val" id="ordStatTotal" style="font-size:22px">0</div></div>
+      <div class="stat-card"><div class="stat-label">Monthly Revenue</div><div class="stat-val" id="ordStatRevenue" style="font-size:22px">£0</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Dispatch</div><div class="stat-val" id="ordStatPending" style="font-size:22px">0</div></div>
+      <div class="stat-card"><div class="stat-label">Returns Rate</div><div class="stat-val" id="ordStatReturns" style="font-size:22px">0%</div></div>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="orderSearch" placeholder="Search orders, customers..." oninput="debouncedLoadOrders()">
+      <select id="orderStatusFilter" onchange="loadOrders()">
+        <option value="">All Statuses</option><option>Processing</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option>
+      </select>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>Order #</th><th>Customer</th><th>Items</th><th>Total</th><th>Date</th><th>Delivery</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="ordersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════ RETURNS ══════ -->
+  <div id="sec-returns" class="section-view">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="stat-card"><div class="stat-label">Open Returns</div><div class="stat-val" id="retStatOpen" style="font-size:22px">0</div></div>
+      <div class="stat-card"><div class="stat-label">Processed This Month</div><div class="stat-val" id="retStatProcessed" style="font-size:22px">0</div></div>
+      <div class="stat-card"><div class="stat-label">Refunds Issued</div><div class="stat-val" id="retStatRefunds" style="font-size:22px">£0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Returns & Refund Requests</div></div>
+      <table class="data-table">
+        <thead><tr><th>Return #</th><th>Order</th><th>Customer</th><th>Item</th><th>Reason</th><th>Refund</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="returnsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════ CUSTOMERS ══════ -->
+  <div id="sec-customers" class="section-view">
+    <div class="filter-bar">
+      <input type="text" id="customerSearch" placeholder="Search customers..." oninput="debouncedLoadCustomers()">
+      <span style="font-size:11px;color:#888;margin-left:auto" id="customerCount"></span>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Location</th><th>Orders</th><th>LTV</th><th>Last Order</th><th>Actions</th></tr></thead>
+        <tbody id="customersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════ PROMOTIONS ══════ -->
+  <div id="sec-promotions" class="section-view">
+    <div class="tabs" id="promoTabs">
+      <button class="tab act" onclick="promoTab('codes',this)">Discount Codes</button>
+      <button class="tab" onclick="promoTab('banners',this)">Promo Banners</button>
+      <button class="tab" onclick="promoTab('flash',this)">Flash Sales</button>
+    </div>
+
+    <div id="promo-codes">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn btn-pri" onclick="openPromoModal()">+ New Promo Code</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min Order</th><th>Used</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="promoCodes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="promo-banners" style="display:none">
+      <div class="two-col" id="bannersContainer"></div>
+    </div>
+
+    <div id="promo-flash" style="display:none">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn btn-pri" onclick="openFlashSaleModal()">+ New Flash Sale</button>
+      </div>
+      <div class="card"><div class="card-head"><div class="card-title">Flash Sales</div></div>
+        <div class="card-body" id="flashSalesContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ CMS ══════ -->
+  <div id="sec-cms" class="section-view">
+    <div class="tabs">
+      <button class="tab act" onclick="cmsTab('homepage',this)">Homepage</button>
+      <button class="tab" onclick="cmsTab('announcement',this)">Announcement Bar</button>
+      <button class="tab" onclick="cmsTab('categories',this)">Categories</button>
+      <button class="tab" onclick="cmsTab('footer',this)">Footer</button>
+      <button class="tab" onclick="cmsTab('pages',this)">Content Pages</button>
+      <button class="tab" onclick="cmsTab('seo',this)">SEO & Meta</button>
+    </div>
+
+    <div id="cms-homepage">
+      <div class="two-col">
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head"><div class="card-title">Hero Banner Content</div><button class="btn btn-pri btn-sm" onclick="saveHero()">Publish Changes</button></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="fg"><label>Eyebrow Text</label><input id="heroEyebrow"></div>
+                <div class="fg"><label>Background Colour</label><div class="color-picker-row"><div class="color-swatch" id="heroColorSwatch"></div><input id="heroBgColor" style="flex:1"></div></div>
+                <div class="fg fg-full"><label>Headline (line breaks are kept as typed)</label><textarea id="heroHeadline" rows="2" style="min-height:44px"></textarea></div>
+                <div class="fg fg-full"><label>Subheadline</label><input id="heroSubheadline"></div>
+                <div class="fg"><label>Primary CTA Text</label><input id="heroPrimaryCta"></div>
+                <div class="fg"><label>Secondary CTA Text</label><input id="heroSecondaryCta"></div>
+                <div class="fg fg-full">
+                  <label>Banner Picture</label>
+                  <div id="heroImageThumb" style="display:none;margin-bottom:8px">
+                    <div class="img-thumb" style="width:160px;height:100px">
+                      <img id="heroImagePreviewImg" src="">
+                      <button class="img-remove" onclick="removeHeroImage()" title="Remove">×</button>
+                    </div>
+                  </div>
+                  <input type="file" id="heroImageInput" accept="image/jpeg,image/png,image/webp,image/gif" onchange="uploadHeroImage(event)">
+                  <div style="font-size:10.5px;color:#aaa;margin-top:4px">Uploads immediately and goes live right away. JPEG, PNG, WebP or GIF, up to 20MB.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Trust Bar</div><button class="btn btn-pri btn-sm" onclick="saveHero()">Save</button></div>
+            <div class="card-body">
+              <div id="trustBarItems"></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head"><div class="card-title">Live Preview</div><span style="font-size:10px;color:#2e7d32;font-weight:700">● Reflects storefront</span></div>
+            <div class="card-body">
+              <div style="border-radius:8px;padding:16px;color:#fff;margin-bottom:10px" id="heroPreview">
+                <div style="font-size:10px;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;display:inline-block;font-weight:700;margin-bottom:8px" id="heroPreviewEyebrow"></div>
+                <div style="font-size:18px;font-weight:800;margin-bottom:6px" id="heroPreviewHeadline"></div>
+                <div style="font-size:11px;opacity:.85;margin-bottom:12px" id="heroPreviewSub"></div>
+              </div>
+              <div style="border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:linear-gradient(135deg,#fff3ec,#ffe4d1);display:flex;align-items:center;justify-content:center;font-size:48px" id="heroPreviewArt">
+                <img id="heroPreviewArtImg" style="display:none;width:100%;height:100%;object-fit:cover" alt="Banner picture">
+                <span id="heroPreviewArtEmoji">🛒</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Promo Banner Cards</div><button class="btn btn-pri btn-sm" onclick="saveHero()">Save</button></div>
+            <div class="card-body" id="promoCardsEditor"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cms-announcement" style="display:none">
+      <div class="card"><div class="card-head"><div class="card-title">Announcement Bar</div><button class="btn btn-pri btn-sm" onclick="saveAnnouncement()">Publish</button></div>
+        <div class="card-body">
+          <div class="fg" style="margin-bottom:12px"><label>Bar Text (use | to separate items)</label><textarea id="announceText"></textarea></div>
+          <div class="two-col">
+            <div class="fg"><label>Background Colour</label><input id="announceBg"></div>
+            <div class="fg"><label>Highlight Colour</label><input id="announceHighlight"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cms-categories" style="display:none">
+      <div class="card"><div class="card-head"><div class="card-title">Navigation Categories</div><button class="btn btn-pri btn-sm" onclick="saveCategoryOrder()">Save Order</button></div>
+        <div class="card-body" id="cmsCategories"></div>
+      </div>
+    </div>
+
+    <div id="cms-footer" style="display:none">
+      <div class="two-col">
+        <div class="card"><div class="card-head"><div class="card-title">Company Info</div><button class="btn btn-pri btn-sm" onclick="saveFooter()">Save</button></div>
+          <div class="card-body">
+            <div class="fg" style="margin-bottom:10px"><label>Address</label><input id="footerAddress"></div>
+            <div class="fg" style="margin-bottom:10px"><label>Phone</label><input id="footerPhone"></div>
+            <div class="fg" style="margin-bottom:10px"><label>Email</label><input id="footerEmail"></div>
+            <div class="fg"><label>Company Description</label><textarea id="footerDescription"></textarea></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-head"><div class="card-title">Delivery Info Block</div><button class="btn btn-pri btn-sm" onclick="saveFooter()">Save</button></div>
+          <div class="card-body">
+            <div class="fg" style="margin-bottom:10px"><label>Line 1</label><input id="footerLine1"></div>
+            <div class="fg" style="margin-bottom:10px"><label>Line 2</label><input id="footerLine2"></div>
+            <div class="fg" style="margin-bottom:10px"><label>Line 3</label><input id="footerLine3"></div>
+            <div class="fg"><label>Highlight Text</label><input id="footerHighlight"></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-head"><div class="card-title">Help &amp; Support</div><button class="btn btn-pri btn-sm" onclick="saveFooter()">Save</button></div>
+          <div class="card-body">
+            <div class="fg" style="margin-bottom:10px"><label>Item 1</label><div style="display:flex;gap:8px"><input id="footerHelp1Label" placeholder="Label" style="flex:1"><input id="footerHelp1Url" placeholder="URL" style="flex:1"></div></div>
+            <div class="fg" style="margin-bottom:10px"><label>Item 2</label><div style="display:flex;gap:8px"><input id="footerHelp2Label" placeholder="Label" style="flex:1"><input id="footerHelp2Url" placeholder="URL" style="flex:1"></div></div>
+            <div class="fg"><label>Item 3</label><div style="display:flex;gap:8px"><input id="footerHelp3Label" placeholder="Label" style="flex:1"><input id="footerHelp3Url" placeholder="URL" style="flex:1"></div></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-head"><div class="card-title">Business</div><button class="btn btn-pri btn-sm" onclick="saveFooter()">Save</button></div>
+          <div class="card-body">
+            <div id="footerBusinessLinks"></div>
+            <button class="btn btn-sm" style="margin-top:8px" onclick="addFooterLinkRow('footerBusinessLinks')">+ Add Item</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cms-pages" style="display:none">
+      <div class="two-col">
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head"><div class="card-title">Help &amp; Support Page</div><button class="btn btn-pri btn-sm" onclick="saveHelpSupportPage()">Save</button></div>
+            <div class="card-body">
+              <div class="fg"><label>Intro Text</label><textarea id="helpIntro"></textarea></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">FAQ Page</div><button class="btn btn-pri btn-sm" onclick="saveFaqPage()">Save</button></div>
+            <div class="card-body">
+              <div class="fg" style="margin-bottom:14px"><label>Intro Text</label><textarea id="faqIntro"></textarea></div>
+              <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px">Questions</label>
+              <div id="faqItemsEditor" style="margin:8px 0"></div>
+              <button class="btn btn-sm" onclick="addFaqItemRow()">+ Add Question</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head"><div class="card-title">About Us Page</div><button class="btn btn-pri btn-sm" onclick="saveAboutPage()">Save</button></div>
+            <div class="card-body">
+              <div class="fg" style="margin-bottom:14px"><label>Intro Text</label><textarea id="aboutIntroInput"></textarea></div>
+              <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px">Story Paragraphs</label>
+              <div id="aboutStoryEditor" style="margin:8px 0"></div>
+              <button class="btn btn-sm" onclick="addAboutParagraphRow()">+ Add Paragraph</button>
+              <label style="display:block;margin-top:16px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px">Values</label>
+              <div id="aboutValuesEditor" style="margin:8px 0"></div>
+              <button class="btn btn-sm" onclick="addAboutValueRow()">+ Add Value</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Delivery &amp; Returns Page</div><button class="btn btn-pri btn-sm" onclick="saveDeliveryReturnsPage()">Save</button></div>
+            <div class="card-body">
+              <div class="fg" style="margin-bottom:14px"><label>Intro Text</label><textarea id="drIntro"></textarea></div>
+              <label style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px">Returns Paragraphs</label>
+              <div id="drParagraphsEditor" style="margin:8px 0"></div>
+              <button class="btn btn-sm" onclick="addDrParagraphRow()">+ Add Paragraph</button>
+              <label style="display:block;margin-top:16px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px">Returns Bullet Points</label>
+              <div id="drBulletsEditor" style="margin:8px 0"></div>
+              <button class="btn btn-sm" onclick="addDrBulletRow()">+ Add Bullet</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cms-seo" style="display:none">
+      <div class="card"><div class="card-head"><div class="card-title">Homepage SEO & Meta</div><button class="btn btn-pri btn-sm" onclick="saveSeo()">Save</button></div>
+        <div class="card-body">
+          <div class="fg" style="margin-bottom:12px"><label>Page Title (max 60 chars)</label><input id="seoTitle"></div>
+          <div class="fg" style="margin-bottom:12px"><label>Meta Description (max 160 chars)</label><textarea id="seoDescription"></textarea></div>
+          <div class="fg"><label>Focus Keywords (comma-separated)</label><input id="seoKeywords"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SETTINGS ══════ -->
+  <div id="sec-settings" class="section-view">
+    <div class="two-col">
+      <div class="card"><div class="card-head"><div class="card-title">Store Settings</div><button class="btn btn-pri btn-sm" onclick="saveStoreSettings()">Save</button></div>
+        <div class="card-body">
+          <div class="fg" style="margin-bottom:10px"><label>Store Name</label><input id="setStoreName"></div>
+          <div class="fg" style="margin-bottom:10px"><label>Store URL</label><input id="setStoreUrl"></div>
+          <div class="fg" style="margin-bottom:10px"><label>Contact Email</label><input id="setContactEmail"></div>
+          <div class="fg" style="margin-bottom:10px"><label>WhatsApp Support</label><input id="setWhatsapp"></div>
+          <div class="fg"><label>Currency</label><select id="setCurrency"><option value="GBP">GBP (£)</option><option value="EUR">EUR (€)</option><option value="USD">USD ($)</option></select></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-head"><div class="card-title">Delivery Settings</div><button class="btn btn-pri btn-sm" onclick="saveDeliverySettings()">Save</button></div>
+        <div class="card-body">
+          <div class="fg" style="margin-bottom:10px"><label>Free Delivery Threshold (£)</label><input id="setFreeThreshold" type="number"></div>
+          <div class="fg" style="margin-bottom:10px"><label>Standard Delivery Fee (£)</label><input id="setStandardFee" type="number" step="0.01"></div>
+          <div class="fg" style="margin-bottom:10px"><label>Express / Same-Day Fee (£)</label><input id="setExpressFee" type="number" step="0.01"></div>
+          <div class="fg" style="margin-bottom:10px"><label>Weekend Delivery Fee (£)</label><input id="setWeekendFee" type="number" step="0.01"></div>
+          <div class="fg"><label>Next-Day Cutoff Time</label><input id="setCutoff"></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-head"><div class="card-title">Notification Settings</div><button class="btn btn-pri btn-sm" onclick="saveNotificationSettings()">Save</button></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:12px;font-weight:600">New Order Email</span><label class="toggle-sw"><input type="checkbox" id="notifNewOrder"><div class="toggle-track"></div></label></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:12px;font-weight:600">Low Stock Alert</span><label class="toggle-sw"><input type="checkbox" id="notifLowStock"><div class="toggle-track"></div></label></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:12px;font-weight:600">Return Request Alert</span><label class="toggle-sw"><input type="checkbox" id="notifReturn"><div class="toggle-track"></div></label></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;font-weight:600">Daily Sales Summary</span><label class="toggle-sw"><input type="checkbox" id="notifDaily"><div class="toggle-track"></div></label></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-head"><div class="card-title">Payment Gateways</div></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div><div style="font-size:12px;font-weight:700">💳 Stripe</div><div style="font-size:11px" id="stripeStatus"></div></div><label class="toggle-sw"><input type="checkbox" id="payStripe" onchange="savePaymentSettings()"><div class="toggle-track"></div></label></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div><div style="font-size:12px;font-weight:700">🅿 PayPal</div><div style="font-size:11px" id="paypalStatus"></div></div><label class="toggle-sw"><input type="checkbox" id="payPaypal" onchange="savePaymentSettings()"><div class="toggle-track"></div></label></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:12px;font-weight:700">🌸 Klarna</div><div style="font-size:11px" id="klarnaStatus"></div></div><button class="btn btn-ghost btn-sm" onclick="toast('Payment integrations coming soon')">Connect</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<div class="modal-backdrop" id="productModal">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-head"><h3 id="productModalTitle">Add New Product</h3><button class="modal-close" onclick="closeModal('productModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg fg-full"><label>Product Name</label><input id="pName" placeholder="e.g. Goat Meat (1kg)"></div>
+        <div class="fg"><label>Category</label>
+          <select id="pCat"></select>
+        </div>
+        <div class="fg"><label>Origin</label>
+          <select id="pOrigin"><option value="Unspecified">Unspecified</option><option>Nigerian</option><option>Ghanaian</option><option>Caribbean</option><option>Cameroonian</option><option>South African</option><option>Zimbabwean</option></select>
+        </div>
+        <div class="fg"><label>Price (£)</label><input id="pPrice" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="fg"><label>Compare-at Price (£)</label><input id="pOldPrice" type="number" step="0.01" placeholder="Optional — creates Sale badge"></div>
+        <div class="fg"><label>Stock Quantity</label><input id="pStock" type="number" placeholder="0"></div>
+        <div class="fg"><label>Weight (g)</label><input id="pWeight" type="number" step="1" placeholder="e.g. 800"></div>
+        <div class="fg"><label>Emoji Icon</label><input id="pEmoji" placeholder="🐐" maxlength="4"></div>
+        <div class="fg fg-full"><label>Short SEO Description (for product cards)</label><input id="pSeoDesc" placeholder="Keyword-rich short description..."></div>
+        <div class="fg fg-full"><label>Full Product Description</label><textarea id="pDesc" placeholder="Full description for the product detail page..."></textarea></div>
+        <div class="fg"><label>Tags (comma-separated)</label><input id="pTags" placeholder="Halal, Fresh Frozen, Gluten-Free"></div>
+        <div class="fg"><label>Status</label><select id="pStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+        <div class="fg"><label>Best Seller Rank</label><input id="pBsRank" type="number" placeholder="Leave blank if not a best seller"></div>
+        <div class="fg"><label>Mark as New Arrival</label><select id="pIsNew"><option value="yes">Yes — show in New Arrivals</option><option value="no">No</option></select></div>
+      </div>
+
+      <div id="imagesSection" style="margin-top:20px;border-top:1px solid #eee;padding-top:16px">
+        <div class="card-title" style="font-size:13px;margin-bottom:10px">Product Photos <span style="font-weight:500;color:#888">(JPEG/PNG/WebP/GIF, up to 5MB each)</span></div>
+        <div id="imagesGrid" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px"></div>
+        <input type="file" id="pImageInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple onchange="onImageFilesSelected(event)">
+      </div>
+
+      <div id="variationsSection" style="margin-top:20px;border-top:1px solid #eee;padding-top:16px">
+        <div id="variationsLockedNote" class="empty-state" style="display:none;padding:20px">Save the product first to add variations.</div>
+        <div id="variationsBody" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="card-title" style="font-size:13px">Variations <span style="font-weight:500;color:#888">(size, colour, etc. — each with its own price &amp; stock)</span></div>
+            <button class="btn btn-ghost btn-sm" onclick="addPendingVariationCard()">+ Add Variation</button>
+          </div>
+          <div id="variationsList"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('productModal')">Cancel</button>
+      <button class="btn btn-pri" onclick="saveProduct()">Save Product →</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="orderModal">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-head"><h3>Order Details</h3><button class="modal-close" onclick="closeModal('orderModal')">×</button></div>
+    <div class="modal-body" id="orderModalBody"></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('orderModal')">Close</button><button class="btn btn-ghost" onclick="openInvoice(currentOrderId)">🧾 Invoice</button><button class="btn btn-sec" onclick="updateOrderStatus()">Update Status</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="customerModal">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-head"><h3>Customer Details</h3><button class="modal-close" onclick="closeModal('customerModal')">×</button></div>
+    <div class="modal-body" id="customerModalBody"></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('customerModal')">Close</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="promoModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Create Promo Code</h3><button class="modal-close" onclick="closeModal('promoModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg"><label>Code</label><input id="promoCode" placeholder="ENNYS20" style="text-transform:uppercase"></div>
+        <div class="fg"><label>Type</label><select id="promoType"><option>Percentage (%)</option><option>Fixed Amount (£)</option><option>Free Delivery</option></select></div>
+        <div class="fg"><label>Discount Value</label><input id="promoVal" type="number" placeholder="20"></div>
+        <div class="fg"><label>Min Order Value (£)</label><input id="promoMin" type="number" placeholder="0"></div>
+        <div class="fg"><label>Max Uses</label><input id="promoMax" type="number" placeholder="Unlimited"></div>
+        <div class="fg"><label>Expiry Date</label><input id="promoExp" type="date"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('promoModal')">Cancel</button><button class="btn btn-pri" onclick="savePromo()">Create Code →</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="flashSaleModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Create Flash Sale</h3><button class="modal-close" onclick="closeModal('flashSaleModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg fg-full"><label>Title</label><input id="flashTitle" placeholder="Fresh Meat Week — 20% Off"></div>
+        <div class="fg"><label>Discount %</label><input id="flashDiscount" type="number" placeholder="20"></div>
+        <div class="fg"><label>Ends</label><input id="flashEnds" type="date"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('flashSaleModal')">Cancel</button><button class="btn btn-pri" onclick="saveFlashSale()">Create →</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+</div>
+
+<script>
+/* ── API HELPER ── */
+async function apiFetch(url, opts = {}) {
+  const res = await fetch(url, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  });
+  if (res.status === 401) { location.href = '/login'; return null; }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({ error: res.statusText }));
+    toast(e.error || 'Something went wrong');
+    throw new Error(e.error || res.statusText);
+  }
+  if (res.status === 204) return null;
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('application/json') ? res.json() : res.text();
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+/* ── NAVIGATION ── */
+const SECTION_LOADERS = {
+  dashboard: loadDashboard,
+  catalogue: loadCatalogue,
+  sales: loadOrders,
+  returns: loadReturns,
+  customers: loadCustomers,
+  promotions: () => { loadPromoCodes(); loadBanners(); loadFlashSales(); },
+  cms: loadAllCms,
+  settings: loadAllSettings
+};
+
+function nav(section, btn) {
+  document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('act'));
+  document.getElementById('sec-' + section).classList.add('active');
+  if (btn) btn.classList.add('act');
+  const titles = { dashboard: 'Dashboard', catalogue: 'Product Catalogue', sales: 'Orders & Sales', returns: 'Returns & Refunds', customers: 'Customers', promotions: 'Promotions', cms: 'CMS — Website Content', settings: 'Store Settings' };
+  document.getElementById('topbarTitle').textContent = titles[section] || section;
+  (SECTION_LOADERS[section] || (() => {}))();
+}
+
+/* ── AUTH ── */
+async function checkSession() {
+  const data = await apiFetch('/api/auth/session');
+  if (data && data.authenticated) {
+    document.getElementById('adminUsername').textContent = data.username;
+    document.getElementById('avatarInitials').textContent = data.username.slice(0, 2).toUpperCase();
+  }
+}
+
+async function logout() {
+  await apiFetch('/api/auth/logout', { method: 'POST' });
+  location.href = '/login';
+}
+
+/* ── DASHBOARD ── */
+async function loadDashboard() {
+  const [summary, revenue, top, recent, alerts, activity] = await Promise.all([
+    apiFetch('/api/dashboard/summary'),
+    apiFetch('/api/dashboard/revenue'),
+    apiFetch('/api/dashboard/top-products?limit=5'),
+    apiFetch('/api/dashboard/recent-orders?limit=6'),
+    apiFetch('/api/dashboard/stock-alerts'),
+    apiFetch('/api/dashboard/activity?limit=8')
+  ]);
+
+  document.getElementById('statRevenue').textContent = `£${Number(summary.todayRevenue).toFixed(2)}`;
+  const revChange = document.getElementById('statRevenueChange');
+  revChange.textContent = `${summary.revenueChangePct >= 0 ? '↑' : '↓'} ${Math.abs(summary.revenueChangePct)}% vs yesterday`;
+  revChange.className = 'stat-change ' + (summary.revenueChangePct >= 0 ? 'up' : 'down');
+
+  document.getElementById('statOrders').textContent = summary.ordersToday;
+  const ordChange = document.getElementById('statOrdersChange');
+  ordChange.textContent = `${summary.ordersChange >= 0 ? '↑' : '↓'} ${Math.abs(summary.ordersChange)} from yesterday`;
+  ordChange.className = 'stat-change ' + (summary.ordersChange >= 0 ? 'up' : 'down');
+
+  document.getElementById('statProducts').textContent = summary.activeProducts;
+  document.getElementById('statLowStock').textContent = `${summary.lowStock} low stock`;
+  document.getElementById('statAov').textContent = `£${Number(summary.avgOrderValue).toFixed(2)}`;
+
+  const maxRev = Math.max(1, ...revenue.map(d => d.rev));
+  const maxOrd = Math.max(1, ...revenue.map(d => d.orders));
+  document.getElementById('revenueChart').innerHTML = revenue.map(d => `
+    <div class="chart-bar-col">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;width:100%">
+        <div class="chart-bar" style="height:${Math.round((d.rev / maxRev) * 130)}px;background:#e65c00" title="£${d.rev}"></div>
+        <div class="chart-bar" style="height:${Math.round((d.orders / maxOrd) * 40)}px;background:#2e7d32;opacity:.7" title="${d.orders} orders"></div>
+      </div>
+      <div class="chart-label">${new Date(d.day).toLocaleDateString('en-GB', { weekday: 'short' })}</div>
+    </div>
+  `).join('') || '<div class="empty-state">No revenue yet</div>';
+
+  const maxSales = Math.max(1, ...top.map(p => p.sales));
+  document.getElementById('topProdsWidget').innerHTML = top.map(p => `
+    <div class="top-prod-row">
+      <div class="top-prod-emoji">${p.emoji}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.round((p.sales / maxSales) * 100)}%"></div></div>
+      </div>
+      <div style="font-size:11px;font-weight:800;color:#e65c00;min-width:40px;text-align:right">${p.sales}</div>
+    </div>
+  `).join('') || '<div class="empty-state">No sales yet</div>';
+
+  document.getElementById('recentOrdersTable').innerHTML = recent.map(o => `
+    <tr>
+      <td><span style="font-family:monospace;font-size:11px;color:#e65c00">${o.order_number}</span></td>
+      <td>${o.customer_name.split(' ')[0]}</td>
+      <td><strong>£${Number(o.total).toFixed(2)}</strong></td>
+      <td><span class="badge badge-${o.status.toLowerCase()}">${o.status}</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" class="empty-state">No orders yet</td></tr>';
+
+  let alertsHtml = '';
+  alerts.out.forEach(p => alertsHtml += `<div class="stock-alert out">${p.emoji} <strong>${p.name}</strong> — Out of Stock</div>`);
+  alerts.low.forEach(p => alertsHtml += `<div class="stock-alert low">${p.emoji} <strong>${p.name}</strong> — Only ${p.stock_quantity} left</div>`);
+  document.getElementById('stockAlerts').innerHTML = alertsHtml || '<div style="font-size:12px;color:#888">No stock alerts 🎉</div>';
+
+  document.getElementById('activityFeed').innerHTML = activity.map(a => `
+    <div class="activity-item">
+      <div class="activity-dot" style="background:${a.dot_color}"></div>
+      <div><div class="activity-text">${a.message}</div><div class="activity-time">${new Date(a.created_at).toLocaleString('en-GB')}</div></div>
+    </div>
+  `).join('') || '<div style="font-size:12px;color:#888">No recent activity</div>';
+
+  document.getElementById('ordersBadge').textContent = summary.ordersToday;
+}
+
+/* ── CATALOGUE ── */
+let CATALOGUE_CACHE = [];
+let CATEGORY_CACHE = [];
+
+async function ensureCategories() {
+  CATEGORY_CACHE = await apiFetch('/api/categories');
+  const filterOpts = '<option value="">All Categories</option>' + CATEGORY_CACHE.map(c => `<option value="${c.slug}">${c.emoji} ${c.name}</option>`).join('');
+  document.getElementById('catCatFilter').innerHTML = filterOpts;
+  document.getElementById('pCat').innerHTML = CATEGORY_CACHE.map(c => `<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+}
+
+async function loadCatalogue() {
+  if (CATEGORY_CACHE.length === 0) await ensureCategories();
+  const search = document.getElementById('catSearch').value;
+  const category = document.getElementById('catCatFilter').value;
+  const status = document.getElementById('catStatusFilter').value;
+  const qs = new URLSearchParams({ search, category, status }).toString();
+  CATALOGUE_CACHE = await apiFetch('/api/products?' + qs);
+  renderCatalogue();
+}
+const debouncedLoadCatalogue = debounce(loadCatalogue, 300);
+
+function renderCatalogue() {
+  document.getElementById('catalogueBody').innerHTML = CATALOGUE_CACHE.map(p => `
+    <tr>
+      <td class="emoji-cell">${p.images && p.images[0] ? `<img src="${p.images[0].url}" style="width:32px;height:32px;object-fit:cover;border-radius:6px">` : p.emoji}</td>
+      <td><div style="font-weight:700;font-size:12px">${p.name}</div><div style="font-size:10px;color:#aaa">🌍 ${p.origin}</div></td>
+      <td>${p.categories.map(c => `<span class="badge badge-inactive">${c.name}</span>`).join(' ') || '<span class="badge badge-inactive">Uncategorised</span>'}</td>
+      <td>${p.hasVariations
+        ? `<strong>From £${Number(p.priceMin).toFixed(2)}</strong>${p.priceMin !== p.priceMax ? ` – £${Number(p.priceMax).toFixed(2)}` : ''}`
+        : `<strong>£${Number(p.price).toFixed(2)}</strong>${p.compare_at_price ? `<span style="color:#bbb;text-decoration:line-through;font-size:10px;margin-left:4px">£${Number(p.compare_at_price).toFixed(2)}</span>` : ''}`}</td>
+      <td>${p.hasVariations
+        ? `<span class="${p.stockTotal === 0 ? 'badge badge-out' : p.stockTotal <= 5 ? 'badge badge-low' : 'badge badge-active'}">${p.stockTotal === 0 ? 'Out of Stock' : `${p.stockTotal} units (${p.variationCount} variants)`}</span>`
+        : `<span class="${p.stock_quantity === 0 ? 'badge badge-out' : p.stock_quantity <= 5 ? 'badge badge-low' : 'badge badge-active'}">${p.stock_quantity === 0 ? 'Out of Stock' : p.stock_quantity <= 5 ? `Low (${p.stock_quantity})` : `${p.stock_quantity} units`}</span>`}</td>
+      <td style="font-weight:700">${p.sales_count}</td>
+      <td><label class="toggle-sw"><input type="checkbox" ${p.status === 'active' ? 'checked' : ''} onchange="toggleProductStatus(${p.id},this.checked)"><div class="toggle-track"></div></label></td>
+      <td>
+        ${p.isNew ? `<span class="badge badge-new" style="margin-right:3px">New</span>` : ''}
+        ${p.needsReview ? `<span class="badge badge-low" title="${p.review_notes || ''}">Needs review</span>` : ''}
+      </td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn-icon" onclick="openEditProduct(${p.id})" title="Edit">✏️</button>
+          <button class="btn-icon" onclick="duplicateProduct(${p.id})" title="Duplicate">📋</button>
+          <button class="btn-icon" onclick="deleteProduct(${p.id})" title="Delete" style="color:#e53935">🗑</button>
+        </div>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="9" class="empty-state">No products match your filters</td></tr>';
+}
+
+async function toggleProductStatus(id, active) {
+  await apiFetch(`/api/products/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) });
+  toast(active ? 'Product activated' : 'Product deactivated');
+  loadCatalogue();
+}
+
+async function deleteProduct(id) {
+  const p = CATALOGUE_CACHE.find(x => x.id === id);
+  if (!confirm(`Delete "${p ? p.name : 'this product'}"? This cannot be undone.`)) return;
+  await apiFetch(`/api/products/${id}`, { method: 'DELETE' });
+  toast('Product deleted');
+  loadCatalogue();
+}
+
+async function duplicateProduct(id) {
+  await apiFetch(`/api/products/${id}/duplicate`, { method: 'POST' });
+  toast('Product duplicated');
+  loadCatalogue();
+}
+
+let editingId = null;
+function clearProductForm() {
+  ['pName', 'pPrice', 'pOldPrice', 'pStock', 'pWeight', 'pEmoji', 'pSeoDesc', 'pDesc', 'pTags', 'pBsRank'].forEach(id => document.getElementById(id).value = '');
+}
+
+function openAddProduct() {
+  editingId = null;
+  document.getElementById('productModalTitle').textContent = 'Add New Product';
+  clearProductForm();
+  document.getElementById('pStatus').value = 'active';
+  document.getElementById('pIsNew').value = 'no';
+  document.getElementById('variationsLockedNote').style.display = 'block';
+  document.getElementById('variationsBody').style.display = 'none';
+  resetImageState();
+  openModal('productModal');
+}
+
+function openEditProduct(id) {
+  const p = CATALOGUE_CACHE.find(x => x.id === id);
+  if (!p) return;
+  editingId = id;
+  document.getElementById('productModalTitle').textContent = 'Edit Product';
+  document.getElementById('pName').value = p.name;
+  document.getElementById('pPrice').value = p.price;
+  document.getElementById('pOldPrice').value = p.compare_at_price || '';
+  document.getElementById('pStock').value = p.stock_quantity;
+  document.getElementById('pWeight').value = p.weight != null ? p.weight : '';
+  document.getElementById('pEmoji').value = p.emoji;
+  document.getElementById('pSeoDesc').value = p.short_description || '';
+  document.getElementById('pDesc').value = p.full_description || '';
+  document.getElementById('pTags').value = p.tags.join(', ');
+  document.getElementById('pBsRank').value = p.best_seller_rank || '';
+  document.getElementById('pIsNew').value = p.isNew ? 'yes' : 'no';
+  document.getElementById('pStatus').value = p.status;
+  document.getElementById('variationsLockedNote').style.display = 'none';
+  document.getElementById('variationsBody').style.display = 'block';
+  loadVariationsForProduct(id);
+  document.getElementById('pOrigin').value = p.origin;
+  if (p.categories[0]) document.getElementById('pCat').value = p.categories[0].id;
+  resetImageState();
+  SAVED_IMAGES_CACHE = p.images || [];
+  renderImagesGrid();
+  openModal('productModal');
+}
+
+async function saveProduct() {
+  const name = document.getElementById('pName').value.trim();
+  if (!name) { toast('Product name is required!'); return; }
+  const data = {
+    name,
+    origin: document.getElementById('pOrigin').value,
+    price: document.getElementById('pPrice').value,
+    oldPrice: document.getElementById('pOldPrice').value,
+    stock: document.getElementById('pStock').value,
+    weight: document.getElementById('pWeight').value,
+    emoji: document.getElementById('pEmoji').value || '📦',
+    seoDesc: document.getElementById('pSeoDesc').value,
+    desc: document.getElementById('pDesc').value,
+    tags: document.getElementById('pTags').value,
+    status: document.getElementById('pStatus').value,
+    isNew: document.getElementById('pIsNew').value === 'yes',
+    bsRank: document.getElementById('pBsRank').value,
+    categoryIds: [parseInt(document.getElementById('pCat').value, 10)]
+  };
+  if (editingId) {
+    await apiFetch(`/api/products/${editingId}`, { method: 'PUT', body: JSON.stringify(data) });
+    toast(`${name} updated!`);
+  } else {
+    const created = await apiFetch('/api/products', { method: 'POST', body: JSON.stringify(data) });
+    if (PENDING_IMAGE_FILES.length > 0) {
+      await uploadImages(created.id, PENDING_IMAGE_FILES);
+      PENDING_IMAGE_FILES = [];
+    }
+    toast(`${name} added to catalogue!`);
+  }
+  closeModal('productModal');
+  loadCatalogue();
+}
+
+function exportCSV() {
+  location.href = '/api/products/export.csv';
+}
+
+/* ── PRODUCT PHOTOS ── */
+let SAVED_IMAGES_CACHE = [];   // [{id, url}] — for the product currently being edited
+let PENDING_IMAGE_FILES = [];  // File[] — staged locally until a brand-new product is created
+
+function resetImageState() {
+  PENDING_IMAGE_FILES.forEach(f => f.previewUrl && URL.revokeObjectURL(f.previewUrl));
+  PENDING_IMAGE_FILES = [];
+  SAVED_IMAGES_CACHE = [];
+  document.getElementById('pImageInput').value = '';
+  renderImagesGrid();
+}
+
+function renderImagesGrid() {
+  const grid = document.getElementById('imagesGrid');
+  if (editingId) {
+    grid.innerHTML = SAVED_IMAGES_CACHE.map(img => `
+      <div class="img-thumb">
+        <img src="${img.url}">
+        <button class="img-remove" onclick="deleteSavedImage(${img.id})" title="Remove">×</button>
+        ${img === SAVED_IMAGES_CACHE[0]
+          ? `<span class="img-primary-badge">Main</span>`
+          : `<button class="img-make-primary" onclick="makeImagePrimary(${img.id})">Set as main</button>`}
+      </div>
+    `).join('') || '<div style="font-size:11px;color:#aaa">No photos yet — upload one below.</div>';
+  } else {
+    grid.innerHTML = PENDING_IMAGE_FILES.map((f, i) => `
+      <div class="img-thumb">
+        <img src="${f.previewUrl}">
+        <button class="img-remove" onclick="removePendingImage(${i})" title="Remove">×</button>
+        ${i === 0 ? `<span class="img-primary-badge">Main</span>` : ''}
+      </div>
+    `).join('') || '<div style="font-size:11px;color:#aaa">No photos staged yet — they\'ll upload once you save this product.</div>';
+  }
+}
+
+async function onImageFilesSelected(event) {
+  const files = [...event.target.files];
+  if (files.length === 0) return;
+  if (editingId) {
+    await uploadImages(editingId, files);
+  } else {
+    files.forEach(f => { f.previewUrl = URL.createObjectURL(f); PENDING_IMAGE_FILES.push(f); });
+    renderImagesGrid();
+  }
+  document.getElementById('pImageInput').value = '';
+}
+
+async function uploadImages(productId, files) {
+  const formData = new FormData();
+  files.forEach(f => formData.append('images', f));
+  const res = await fetch(`/api/products/${productId}/images`, { method: 'POST', credentials: 'include', body: formData });
+  if (res.status === 401) { location.href = '/login'; return; }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({ error: res.statusText }));
+    toast(e.error || 'Image upload failed');
+    return;
+  }
+  SAVED_IMAGES_CACHE = await res.json();
+  renderImagesGrid();
+  toast('Photo(s) uploaded!');
+}
+
+function removePendingImage(index) {
+  const [removed] = PENDING_IMAGE_FILES.splice(index, 1);
+  if (removed && removed.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+  renderImagesGrid();
+}
+
+async function deleteSavedImage(imageId) {
+  if (!confirm('Remove this photo?')) return;
+  const result = await apiFetch(`/api/products/${editingId}/images/${imageId}`, { method: 'DELETE' });
+  SAVED_IMAGES_CACHE = result.images;
+  renderImagesGrid();
+  loadCatalogue();
+  toast('Photo removed');
+}
+
+async function makeImagePrimary(imageId) {
+  SAVED_IMAGES_CACHE = await apiFetch(`/api/products/${editingId}/images/${imageId}/primary`, { method: 'PATCH' });
+  renderImagesGrid();
+  loadCatalogue();
+}
+
+/* ── PRODUCT VARIATIONS (size, colour, etc.) ── */
+let CURRENT_VARIATIONS_CACHE = [];
+
+async function loadVariationsForProduct(productId) {
+  CURRENT_VARIATIONS_CACHE = await apiFetch(`/api/products/${productId}/variations`);
+  renderVariationsList(productId);
+}
+
+// Preset attribute types — a fixed list (instead of free text) so admins pick
+// e.g. "Weight" as the attribute and "3kg"/"10kg" as separate variations' values,
+// rather than accidentally typing the value itself ("3kg") into the name field.
+const VARIATION_ATTR_PRESETS = ['Weight', 'Colour', 'Quantity', 'Size', 'Flavour'];
+
+function variationAttrRowHtml(name, value) {
+  const isCustom = name && !VARIATION_ATTR_PRESETS.includes(name);
+  const optionsHtml = VARIATION_ATTR_PRESETS.map(p => `<option value="${p}" ${name === p ? 'selected' : ''}>${p}</option>`).join('')
+    + `<option value="__custom__" ${isCustom ? 'selected' : ''}>Other…</option>`;
+  return `
+    <div class="banner-card-row" style="padding:4px 0;border-bottom:none">
+      <select class="variation-attr-name" style="flex:1;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px" onchange="toggleVariationAttrCustomName(this)">
+        <option value="">Select attribute…</option>
+        ${optionsHtml}
+      </select>
+      <input class="variation-attr-name-custom" placeholder="Custom attribute name" value="${isCustom ? name : ''}" style="flex:1;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px;${isCustom ? '' : 'display:none'}">
+      <input placeholder="Value (e.g. 1kg, Red, 500g)" value="${value || ''}" style="flex:1;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px" class="variation-attr-value">
+      <button class="btn-icon" style="color:#e53935" onclick="this.closest('.banner-card-row').remove()">×</button>
+    </div>`;
+}
+
+function toggleVariationAttrCustomName(select) {
+  const customInput = select.parentElement.querySelector('.variation-attr-name-custom');
+  if (select.value === '__custom__') {
+    customInput.style.display = '';
+    customInput.focus();
+  } else {
+    customInput.style.display = 'none';
+    customInput.value = '';
+  }
+}
+
+function addVariationAttrRow(cardId) {
+  document.getElementById(`variationAttrs-${cardId}`).insertAdjacentHTML('beforeend', variationAttrRowHtml('', ''));
+}
+
+function variationCardHtml(productId, v) {
+  const cardId = v.id;
+  const cardIdJs = JSON.stringify(cardId); // safely embeds either a number or a "new-..." string into onclick=""
+  const productIdJs = JSON.stringify(productId);
+  const attrRows = (v.attributes && v.attributes.length ? v.attributes : [{ name: '', value: '' }])
+    .map(a => variationAttrRowHtml(a.name, a.value)).join('');
+  const summary = (v.attributes || []).map(a => `${a.name}: ${a.value}`).join(' / ') || 'New variation';
+  const isSaved = typeof cardId === 'number';
+  return `
+    <div class="card" style="margin-bottom:10px" data-variation-id="${cardId}">
+      <div class="card-head">
+        <div class="card-title" style="font-size:12px">${summary}</div>
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#888">
+          <input type="radio" name="variationDefault" ${v.isDefault ? 'checked' : ''} onchange='setDefaultVariation(${productIdJs},${cardIdJs})'> Default
+        </label>
+      </div>
+      <div class="card-body">
+        <div id="variationAttrs-${cardId}">${attrRows}</div>
+        <button class="btn btn-ghost btn-sm" style="margin-bottom:10px" onclick='addVariationAttrRow(${cardIdJs})'>+ Add Attribute</button>
+        <div class="form-grid-3">
+          <div class="fg"><label>SKU</label><input id="variation-sku-${cardId}" value="${v.sku || ''}"></div>
+          <div class="fg"><label>Price (£)</label><input id="variation-price-${cardId}" type="number" step="0.01" value="${v.price ?? ''}"></div>
+          <div class="fg"><label>Stock</label><input id="variation-stock-${cardId}" type="number" value="${v.stock ?? 0}"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-pri btn-sm" onclick='saveVariation(${productIdJs},${cardIdJs})'>Save Variation</button>
+          ${isSaved ? `<button class="btn btn-danger btn-sm" onclick='deleteVariation(${productIdJs},${cardIdJs})'>Delete</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderVariationsList(productId) {
+  document.getElementById('variationsList').innerHTML = CURRENT_VARIATIONS_CACHE.map(v => variationCardHtml(productId, v)).join('')
+    || '<div class="empty-state" style="padding:12px">No variations yet — this product uses its base price/stock.</div>';
+}
+
+function addPendingVariationCard() {
+  const pendingId = `new-${Date.now()}`;
+  const html = variationCardHtml(editingId, { id: pendingId, price: '', stock: 0, isDefault: CURRENT_VARIATIONS_CACHE.length === 0, attributes: [] });
+  document.getElementById('variationsList').insertAdjacentHTML('beforeend', html);
+}
+
+function readVariationAttrs(cardId) {
+  const rows = [...document.querySelectorAll(`#variationAttrs-${cardId} .banner-card-row`)];
+  return rows.map(row => {
+    const select = row.querySelector('.variation-attr-name');
+    const name = select.value === '__custom__'
+      ? row.querySelector('.variation-attr-name-custom').value.trim()
+      : select.value.trim();
+    return { name, value: row.querySelector('.variation-attr-value').value.trim() };
+  }).filter(a => a.name && a.value);
+}
+
+async function saveVariation(productId, cardId) {
+  const attributes = readVariationAttrs(cardId);
+  if (attributes.length === 0) { toast('Add at least one attribute (e.g. Size, Colour)'); return; }
+  const isDefaultEl = document.querySelector(`[data-variation-id="${cardId}"] input[name="variationDefault"]`);
+  const body = {
+    sku: document.getElementById(`variation-sku-${cardId}`).value,
+    price: document.getElementById(`variation-price-${cardId}`).value,
+    stock: document.getElementById(`variation-stock-${cardId}`).value,
+    isDefault: isDefaultEl ? isDefaultEl.checked : false,
+    attributes
+  };
+  const isNew = String(cardId).startsWith('new-');
+  await apiFetch(`/api/products/${productId}/variations${isNew ? '' : '/' + cardId}`, {
+    method: isNew ? 'POST' : 'PUT',
+    body: JSON.stringify(body)
+  });
+  toast('Variation saved!');
+  await loadVariationsForProduct(productId);
+  loadCatalogue();
+}
+
+async function deleteVariation(productId, variationId) {
+  if (!confirm('Delete this variation?')) return;
+  await apiFetch(`/api/products/${productId}/variations/${variationId}`, { method: 'DELETE' });
+  toast('Variation deleted');
+  await loadVariationsForProduct(productId);
+  loadCatalogue();
+}
+
+async function setDefaultVariation(productId, variationId) {
+  if (String(variationId).startsWith('new-')) return; // not saved yet
+  await apiFetch(`/api/products/${productId}/variations/${variationId}/default`, { method: 'PATCH' });
+  await loadVariationsForProduct(productId);
+  loadCatalogue();
+}
+
+/* ── ORDERS ── */
+async function loadOrders() {
+  const search = document.getElementById('orderSearch').value;
+  const status = document.getElementById('orderStatusFilter').value;
+  const [orders, stats] = await Promise.all([
+    apiFetch('/api/orders?' + new URLSearchParams({ search, status }).toString()),
+    apiFetch('/api/orders/stats')
+  ]);
+  document.getElementById('ordStatTotal').textContent = stats.totalOrders;
+  document.getElementById('ordStatRevenue').textContent = `£${Number(stats.monthlyRevenue).toFixed(2)}`;
+  document.getElementById('ordStatPending').textContent = stats.pendingDispatch;
+  document.getElementById('ordStatReturns').textContent = `${stats.returnsRate}%`;
+
+  document.getElementById('ordersBody').innerHTML = orders.map(o => `
+    <tr>
+      <td><span style="font-family:monospace;font-size:11px;font-weight:700;color:#e65c00">${o.order_number}</span></td>
+      <td><div style="font-weight:700">${o.customer_name}</div><div style="font-size:10px;color:#aaa">${o.customer_email || ''}</div></td>
+      <td>${o.items || ''}</td>
+      <td><strong>£${Number(o.total).toFixed(2)}</strong></td>
+      <td style="color:#888">${new Date(o.created_at).toLocaleDateString('en-GB')}</td>
+      <td><span class="badge badge-inactive">${o.delivery_type || ''}</span></td>
+      <td><span class="badge badge-${o.status.toLowerCase()}">${o.status}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openOrderDetail(${o.id})">View</button> <button class="btn btn-ghost btn-sm" onclick="openInvoice(${o.id})" title="Print / Save Invoice">🧾</button></td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" class="empty-state">No orders match your filters</td></tr>';
+}
+const debouncedLoadOrders = debounce(loadOrders, 300);
+
+let currentOrderId = null;
+function formatWeightG(grams) {
+  return grams >= 1000 ? `${(grams / 1000).toFixed(2).replace(/\.?0+$/, '')} kg` : `${grams} g`;
+}
+
+function openInvoice(id) {
+  if (!id) return;
+  window.open(`/admin/invoice?id=${id}`, '_blank');
+}
+
+async function openOrderDetail(id) {
+  const o = await apiFetch(`/api/orders/${id}`);
+  currentOrderId = id;
+  document.getElementById('orderModalBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Order</div><div style="font-family:monospace;font-size:14px;font-weight:800;color:#e65c00">${o.order_number}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Status</div><span class="badge badge-${o.status.toLowerCase()}">${o.status}</span></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Customer</div><div style="font-weight:700">${o.customer_name}</div><div style="font-size:11px;color:#aaa">${o.customer_email || ''}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Phone</div><div style="font-size:12px">${o.customer_phone || '—'}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Delivery Address</div><div style="font-size:12px">${o.delivery_address || ''}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Delivery Type</div><div>${o.delivery_type || ''}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Order Date</div><div>${new Date(o.created_at).toLocaleString('en-GB')}</div></div>
+    </div>
+    <div style="border-top:1px solid #eee;padding-top:14px;margin-bottom:14px">
+      <div style="font-size:11px;color:#aaa;font-weight:700;margin-bottom:8px">ORDER ITEMS (${o.items.length})</div>
+      ${o.items.map(it => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+          <span style="font-size:22px">${it.product_emoji || '📦'}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${it.product_name}</div><div style="font-size:10px;color:#aaa">×${it.quantity}${it.variation_summary ? ` &middot; ${it.variation_summary}` : ''}</div></div>
+          <div style="font-size:13px;font-weight:800">£${Number(it.line_total).toFixed(2)}</div>
+        </div>
+      `).join('')}
+    </div>
+    ${o.totalWeight > 0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:#888;padding-bottom:8px"><span>Total Weight</span><span>${formatWeightG(o.totalWeight)}</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:10px;color:#e65c00">
+      <span>Order Total</span><span>£${Number(o.total).toFixed(2)}</span>
+    </div>
+    <div style="margin-top:14px"><div style="font-size:10px;color:#aaa;font-weight:700;margin-bottom:6px">UPDATE STATUS</div>
+    <select id="orderStatusSelect" style="width:100%;padding:8px 12px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:12px;outline:none">
+      <option ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
+      <option ${o.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+      <option ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+      <option ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+    </select></div>
+  `;
+  openModal('orderModal');
+}
+
+async function updateOrderStatus() {
+  const status = document.getElementById('orderStatusSelect').value;
+  await apiFetch(`/api/orders/${currentOrderId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+  toast('Status updated!');
+  closeModal('orderModal');
+  loadOrders();
+}
+
+/* ── RETURNS ── */
+async function loadReturns() {
+  const [returns, stats] = await Promise.all([
+    apiFetch('/api/returns'),
+    apiFetch('/api/returns/stats')
+  ]);
+  document.getElementById('retStatOpen').textContent = stats.open;
+  document.getElementById('retStatProcessed').textContent = stats.processedThisMonth;
+  document.getElementById('retStatRefunds').textContent = `£${Number(stats.refundsIssued).toFixed(2)}`;
+  document.getElementById('returnsBadge').textContent = stats.open;
+
+  document.getElementById('returnsBody').innerHTML = returns.map(r => `
+    <tr>
+      <td><span style="font-family:monospace;font-size:11px;color:#e65c00">${r.return_number}</span></td>
+      <td style="font-size:11px">${r.order_id || ''}</td>
+      <td style="font-weight:600">${r.customer_name || ''}</td>
+      <td style="font-size:11px">${r.item_name || ''}</td>
+      <td style="font-size:11px;color:#888">${r.reason || ''}</td>
+      <td><strong>£${Number(r.refund_amount).toFixed(2)}</strong></td>
+      <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
+      <td><div style="display:flex;gap:4px">
+        ${r.status === 'Pending' ? `<button class="btn btn-sec btn-sm" onclick="approveReturn(${r.id})">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectReturn(${r.id})">Reject</button>` : `<span style="font-size:11px;color:#2e7d32;font-weight:700">✓ Done</span>`}
+      </div></td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" class="empty-state">No return requests</td></tr>';
+}
+
+async function approveReturn(id) {
+  await apiFetch(`/api/returns/${id}/approve`, { method: 'PATCH' });
+  toast('Return approved — refund issued');
+  loadReturns();
+}
+async function rejectReturn(id) {
+  await apiFetch(`/api/returns/${id}/reject`, { method: 'PATCH' });
+  toast('Return rejected');
+  loadReturns();
+}
+
+/* ── CUSTOMERS ── */
+async function loadCustomers() {
+  const search = document.getElementById('customerSearch').value;
+  const rows = await apiFetch('/api/customers?' + new URLSearchParams({ search }).toString());
+  document.getElementById('customerCount').textContent = `${rows.length} total customers`;
+  document.getElementById('customersBody').innerHTML = rows.map(c => `
+    <tr>
+      <td><div style="font-weight:700">${c.name}</div></td>
+      <td style="font-size:11px;color:#888">${c.email}</td>
+      <td style="font-size:11px">${c.location || ''}</td>
+      <td style="font-weight:700;text-align:center">${c.orders}</td>
+      <td><strong style="color:#e65c00">£${Number(c.ltv).toFixed(2)}</strong></td>
+      <td style="font-size:11px;color:#888">${c.last_order ? new Date(c.last_order).toLocaleDateString('en-GB') : '—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openCustomerDetail(${c.id})">View →</button></td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" class="empty-state">No customers yet</td></tr>';
+}
+const debouncedLoadCustomers = debounce(loadCustomers, 300);
+
+async function openCustomerDetail(id) {
+  const c = await apiFetch(`/api/customers/${id}`);
+  const addressParts = [c.address_line1, c.address_line2, c.city, c.postcode].filter(Boolean).join(', ');
+  document.getElementById('customerModalBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Name</div><div style="font-weight:700">${c.name}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Email</div><div style="font-size:12px">${c.email || '—'}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Phone</div><div style="font-size:12px">${c.phone || '—'}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Location</div><div style="font-size:12px">${c.location || '—'}</div></div>
+      <div class="fg-full" style="grid-column:1 / -1"><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Saved Address</div><div style="font-size:12px">${addressParts || '—'}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Customer Since</div><div style="font-size:12px">${c.created_at ? new Date(c.created_at).toLocaleDateString('en-GB') : '—'}</div></div>
+    </div>
+    <div style="display:flex;gap:24px;padding:14px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;margin-bottom:16px">
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Total Orders</div><div style="font-size:18px;font-weight:800">${c.orders}</div></div>
+      <div><div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:3px">Lifetime Value</div><div style="font-size:18px;font-weight:800;color:#e65c00">£${Number(c.ltv).toFixed(2)}</div></div>
+    </div>
+    <div style="font-size:11px;color:#aaa;font-weight:700;margin-bottom:8px">ORDER HISTORY (${c.orderHistory.length})</div>
+    ${c.orderHistory.length ? c.orderHistory.map(o => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f5f5f5;cursor:pointer" onclick="closeModal('customerModal');openOrderDetail(${o.id})">
+        <div>
+          <div style="font-family:monospace;font-size:12px;font-weight:700;color:#e65c00">${o.order_number}</div>
+          <div style="font-size:10px;color:#aaa">${new Date(o.created_at).toLocaleDateString('en-GB')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="badge badge-${o.status.toLowerCase()}">${o.status}</span>
+          <strong style="font-size:13px">£${Number(o.total).toFixed(2)}</strong>
+        </div>
+      </div>
+    `).join('') : '<div class="empty-state">No orders yet</div>'}
+  `;
+  openModal('customerModal');
+}
+
+/* ── PROMOTIONS ── */
+async function loadPromoCodes() {
+  const promos = await apiFetch('/api/promo-codes');
+  const typeLabels = { percentage: 'Percentage', fixed: 'Fixed Amount', free_delivery: 'Free Delivery' };
+  document.getElementById('promoCodes').innerHTML = promos.map(p => `
+    <tr>
+      <td><span class="promo-code-display">${p.code}</span></td>
+      <td style="font-size:11px">${typeLabels[p.type] || p.type}</td>
+      <td><strong style="color:#e65c00">${p.type === 'percentage' ? p.value + '%' : p.type === 'fixed' ? '£' + p.value : 'Free'}</strong></td>
+      <td style="font-size:11px">£${Number(p.min_order_value).toFixed(2)}</td>
+      <td style="font-weight:700">${p.used_count} uses</td>
+      <td style="font-size:11px;color:#888">${p.expires_at || 'No expiry'}</td>
+      <td><span class="badge badge-${p.status === 'active' ? 'active' : 'expired'}">${p.status}</span></td>
+      <td><div style="display:flex;gap:4px"><button class="btn-icon" onclick="navigator.clipboard.writeText('${p.code}');toast('Code copied!')">📋</button><button class="btn-icon" style="color:#e53935" onclick="deletePromoCode(${p.id})">🗑</button></div></td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" class="empty-state">No promo codes yet</td></tr>';
+}
+
+async function deletePromoCode(id) {
+  await apiFetch(`/api/promo-codes/${id}`, { method: 'DELETE' });
+  toast('Code deleted');
+  loadPromoCodes();
+}
+
+function promoTab(tab, btn) {
+  document.querySelectorAll('#promo-codes,#promo-banners,#promo-flash').forEach(el => el.style.display = 'none');
+  document.getElementById('promo-' + tab).style.display = 'block';
+  document.querySelectorAll('#promoTabs .tab').forEach(b => b.classList.remove('act'));
+  if (btn) btn.classList.add('act');
+}
+
+function openPromoModal() { openModal('promoModal'); }
+async function savePromo() {
+  const code = document.getElementById('promoCode').value.trim().toUpperCase();
+  if (!code) { toast('Enter a promo code!'); return; }
+  await apiFetch('/api/promo-codes', {
+    method: 'POST',
+    body: JSON.stringify({
+      code,
+      type: document.getElementById('promoType').value,
+      value: document.getElementById('promoVal').value,
+      min: document.getElementById('promoMin').value,
+      maxUses: document.getElementById('promoMax').value,
+      expiresAt: document.getElementById('promoExp').value
+    })
+  });
+  closeModal('promoModal');
+  toast(`Promo code ${code} created!`);
+  loadPromoCodes();
+}
+
+async function loadBanners() {
+  const banners = await apiFetch('/api/promo-banners');
+  document.getElementById('bannersContainer').innerHTML = banners.map(b => `
+    <div class="card">
+      <div class="card-head"><div class="card-title">${b.title || 'Banner'} — ${b.active ? 'Active' : 'Inactive'}</div>
+        <label class="toggle-sw"><input type="checkbox" ${b.active ? 'checked' : ''} onchange="toggleBannerActive(${b.id},this.checked)"><div class="toggle-track"></div></label>
+      </div>
+      <div class="card-body">
+        <div style="background:${b.background_color || '#b84500'};border-radius:8px;padding:16px;color:#fff;margin-bottom:12px">
+          <div style="font-size:16px;font-weight:800;margin-bottom:4px">${b.title || ''}</div>
+          <div style="font-size:11px;opacity:.8">${b.subtitle || ''}</div>
+        </div>
+        <div class="form-grid">
+          <div class="fg"><label>Title</label><input id="banner-title-${b.id}" value="${b.title || ''}"></div>
+          <div class="fg"><label>Subtitle</label><input id="banner-subtitle-${b.id}" value="${b.subtitle || ''}"></div>
+          <div class="fg"><label>CTA Text</label><input id="banner-cta-${b.id}" value="${b.cta_text || ''}"></div>
+          <div class="fg"><label>CTA Link</label><input id="banner-link-${b.id}" value="${b.cta_link || ''}"></div>
+        </div>
+        <button class="btn btn-pri btn-sm" style="margin-top:10px" onclick="saveBanner(${b.id})">Save Banner</button>
+      </div>
+    </div>
+  `).join('') || '<div class="empty-state">No promo banners yet</div>';
+}
+
+async function saveBanner(id) {
+  await apiFetch(`/api/promo-banners/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      title: document.getElementById(`banner-title-${id}`).value,
+      subtitle: document.getElementById(`banner-subtitle-${id}`).value,
+      cta_text: document.getElementById(`banner-cta-${id}`).value,
+      cta_link: document.getElementById(`banner-link-${id}`).value
+    })
+  });
+  toast('Banner updated!');
+  loadBanners();
+}
+
+async function toggleBannerActive(id, active) {
+  await apiFetch(`/api/promo-banners/${id}`, { method: 'PUT', body: JSON.stringify({ active }) });
+  loadBanners();
+}
+
+async function loadFlashSales() {
+  const sales = await apiFetch('/api/flash-sales');
+  document.getElementById('flashSalesContainer').innerHTML = sales.map(s => `
+    <div style="background:${s.status === 'live' ? '#fff3ec' : '#f5f5f5'};border:1px solid ${s.status === 'live' ? '#fdd5b8' : '#eee'};border-radius:8px;padding:14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div><div style="font-size:13px;font-weight:800">${s.title}</div><div style="font-size:11px;color:#888;margin-top:2px">Applies to: ${s.products.map(p => p.name).join(', ') || 'No products'} · ${s.discount_percent}% off</div></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="badge badge-${s.status}">${s.status === 'live' ? 'Live' : s.status === 'scheduled' ? 'Scheduled' : 'Ended'}</span>${s.status !== 'ended' ? `<button class="btn btn-danger btn-sm" onclick="endFlashSale(${s.id})">End Sale</button>` : ''}</div>
+    </div>
+  `).join('') || '<div class="empty-state">No flash sales yet</div>';
+}
+
+function openFlashSaleModal() { openModal('flashSaleModal'); }
+async function saveFlashSale() {
+  const title = document.getElementById('flashTitle').value.trim();
+  if (!title) { toast('Title is required'); return; }
+  await apiFetch('/api/flash-sales', {
+    method: 'POST',
+    body: JSON.stringify({
+      title,
+      discountPercent: document.getElementById('flashDiscount').value,
+      endsAt: document.getElementById('flashEnds').value,
+      status: 'live'
+    })
+  });
+  closeModal('flashSaleModal');
+  toast('Flash sale created!');
+  loadFlashSales();
+}
+async function endFlashSale(id) {
+  await apiFetch(`/api/flash-sales/${id}/end`, { method: 'PATCH' });
+  toast('Flash sale ended');
+  loadFlashSales();
+}
+
+/* ── CMS ── */
+function cmsTab(tab, btn) {
+  document.querySelectorAll('[id^="cms-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('cms-' + tab).style.display = 'block';
+  document.querySelectorAll('#sec-cms .tabs .tab').forEach(b => b.classList.remove('act'));
+  if (btn) btn.classList.add('act');
+}
+
+async function loadAllCms() {
+  await Promise.all([loadHero(), loadAnnouncement(), loadCmsCategories(), loadFooter(), loadPagesCms(), loadSeo()]);
+}
+
+function updateHeroPreview() {
+  const bg = document.getElementById('heroBgColor').value || '#b84500';
+  document.getElementById('heroPreview').style.background = bg;
+  document.getElementById('heroPreviewEyebrow').textContent = document.getElementById('heroEyebrow').value;
+  document.getElementById('heroPreviewHeadline').innerHTML = document.getElementById('heroHeadline').value.replace(/\n/g, '<br>');
+  document.getElementById('heroPreviewSub').textContent = document.getElementById('heroSubheadline').value;
+  document.getElementById('heroColorSwatch').style.background = bg;
+
+  const artImg = document.getElementById('heroPreviewArtImg');
+  const artEmoji = document.getElementById('heroPreviewArtEmoji');
+  if (CURRENT_HERO_IMAGE_URL) {
+    artImg.src = CURRENT_HERO_IMAGE_URL;
+    artImg.style.display = 'block';
+    artEmoji.style.display = 'none';
+  } else {
+    artImg.style.display = 'none';
+    artEmoji.style.display = '';
+  }
+}
+
+let CURRENT_HERO_IMAGE_URL = '';
+
+function renderHeroImage(imageUrl) {
+  CURRENT_HERO_IMAGE_URL = imageUrl || '';
+  const thumb = document.getElementById('heroImageThumb');
+  if (imageUrl) {
+    document.getElementById('heroImagePreviewImg').src = imageUrl;
+    thumb.style.display = 'block';
+  } else {
+    thumb.style.display = 'none';
+  }
+  updateHeroPreview();
+}
+
+async function uploadHeroImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch('/api/cms/homepage_hero/image', { method: 'POST', credentials: 'include', body: formData });
+  if (res.status === 401) { location.href = '/login'; return; }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({ error: res.statusText }));
+    toast(e.error || 'Image upload failed');
+    return;
+  }
+  const hero = await res.json();
+  renderHeroImage(hero.image_url);
+  document.getElementById('heroImageInput').value = '';
+  toast('Banner picture updated on storefront!');
+}
+
+async function removeHeroImage() {
+  if (!confirm('Remove the banner picture?')) return;
+  await apiFetch('/api/cms/homepage_hero/image', { method: 'DELETE' });
+  renderHeroImage(null);
+  toast('Banner picture removed');
+}
+
+async function loadHero() {
+  const hero = await apiFetch('/api/cms/homepage_hero');
+  document.getElementById('heroEyebrow').value = hero.eyebrow || '';
+  document.getElementById('heroBgColor').value = hero.background_color || '#b84500';
+  document.getElementById('heroHeadline').value = hero.headline || '';
+  document.getElementById('heroSubheadline').value = hero.subheadline || '';
+  document.getElementById('heroPrimaryCta').value = hero.primary_cta_text || '';
+  document.getElementById('heroSecondaryCta').value = hero.secondary_cta_text || '';
+  renderHeroImage(hero.image_url);
+  document.getElementById('trustBarItems').innerHTML = (hero.trust_bar || []).map((item, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <input id="trust-icon-${i}" value="${item.icon}" style="width:40px;padding:5px;border:1px solid #eee;border-radius:5px;text-align:center;font-size:14px">
+      <input id="trust-title-${i}" value="${item.title}" style="flex:1;padding:6px 10px;border:1px solid #eee;border-radius:5px;font-size:12px">
+      <input id="trust-sub-${i}" value="${item.subtitle}" style="flex:1;padding:6px 10px;border:1px solid #eee;border-radius:5px;font-size:11px;color:#888">
+    </div>
+  `).join('');
+  document.getElementById('promoCardsEditor').innerHTML = (hero.promo_cards || []).map((card, i) => `
+    <div class="fg" style="margin-bottom:10px"><label>Banner ${i + 1} — Title</label><input id="promocard-title-${i}" value="${card.title}"></div>
+    <div class="fg" style="margin-bottom:10px"><label>Banner ${i + 1} — Body</label><input id="promocard-body-${i}" value="${card.body}"></div>
+  `).join('');
+  updateHeroPreview();
+  ['heroEyebrow', 'heroBgColor', 'heroHeadline', 'heroSubheadline'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateHeroPreview);
+  });
+}
+
+async function saveHero() {
+  const trustBar = [];
+  document.querySelectorAll('[id^="trust-icon-"]').forEach((el, i) => {
+    trustBar.push({
+      icon: document.getElementById(`trust-icon-${i}`).value,
+      title: document.getElementById(`trust-title-${i}`).value,
+      subtitle: document.getElementById(`trust-sub-${i}`).value
+    });
+  });
+  const promoCards = [];
+  document.querySelectorAll('[id^="promocard-title-"]').forEach((el, i) => {
+    promoCards.push({
+      title: document.getElementById(`promocard-title-${i}`).value,
+      body: document.getElementById(`promocard-body-${i}`).value
+    });
+  });
+  await apiFetch('/api/cms/homepage_hero', {
+    method: 'PUT',
+    body: JSON.stringify({
+      eyebrow: document.getElementById('heroEyebrow').value,
+      background_color: document.getElementById('heroBgColor').value,
+      headline: document.getElementById('heroHeadline').value,
+      subheadline: document.getElementById('heroSubheadline').value,
+      primary_cta_text: document.getElementById('heroPrimaryCta').value,
+      secondary_cta_text: document.getElementById('heroSecondaryCta').value,
+      image_url: CURRENT_HERO_IMAGE_URL,
+      trust_bar: trustBar,
+      promo_cards: promoCards
+    })
+  });
+  toast('Homepage updated on storefront!');
+}
+
+async function loadAnnouncement() {
+  const a = await apiFetch('/api/cms/announcement_bar');
+  document.getElementById('announceText').value = a.text || '';
+  document.getElementById('announceBg').value = a.background_color || '#1a1a1a';
+  document.getElementById('announceHighlight').value = a.highlight_color || '#f47c2f';
+}
+
+async function saveAnnouncement() {
+  await apiFetch('/api/cms/announcement_bar', {
+    method: 'PUT',
+    body: JSON.stringify({
+      text: document.getElementById('announceText').value,
+      background_color: document.getElementById('announceBg').value,
+      highlight_color: document.getElementById('announceHighlight').value
+    })
+  });
+  toast('Announcement bar updated!');
+}
+
+async function loadCmsCategories() {
+  const cats = await apiFetch('/api/categories');
+  document.getElementById('cmsCategories').innerHTML = cats.map(c => `
+    <div class="banner-card-row" data-cat-id="${c.id}">
+      <span style="color:#aaa;font-size:14px;cursor:grab">⠿</span>
+      <input value="${c.emoji}" id="cat-emoji-${c.id}" style="width:36px;padding:4px;border:1px solid #eee;border-radius:5px;text-align:center;font-size:14px">
+      <input value="${c.name}" id="cat-name-${c.id}" style="flex:1;padding:6px 10px;border:1px solid #eee;border-radius:5px;font-size:12px">
+      <label class="toggle-sw"><input type="checkbox" ${c.visible ? 'checked' : ''} id="cat-visible-${c.id}"><div class="toggle-track"></div></label>
+      <span style="font-size:11px;color:#aaa;font-weight:600">${c.visible ? 'Visible' : 'Hidden'}</span>
+    </div>
+  `).join('');
+}
+
+async function saveCategoryOrder() {
+  const rows = [...document.querySelectorAll('#cmsCategories [data-cat-id]')];
+  for (const row of rows) {
+    const id = row.dataset.catId;
+    await apiFetch(`/api/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: document.getElementById(`cat-name-${id}`).value,
+        emoji: document.getElementById(`cat-emoji-${id}`).value,
+        visible: document.getElementById(`cat-visible-${id}`).checked
+      })
+    });
+  }
+  await apiFetch('/api/categories/reorder', { method: 'PUT', body: JSON.stringify({ order: rows.map(r => parseInt(r.dataset.catId, 10)) }) });
+  toast('Categories saved!');
+  ensureCategories();
+}
+
+function footerLinkRowHtml(link) {
+  const label = link && link.label || '';
+  const url = link && link.url || '';
+  return `
+    <div class="banner-card-row" style="padding:4px 0">
+      <input placeholder="Label" value="${label}" style="flex:1;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px" class="footer-link-label">
+      <input placeholder="URL" value="${url}" style="flex:1;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px" class="footer-link-url">
+      <button class="btn-icon" style="color:#e53935" onclick="this.closest('.banner-card-row').remove()">×</button>
+    </div>`;
+}
+
+function addFooterLinkRow(containerId) {
+  document.getElementById(containerId).insertAdjacentHTML('beforeend', footerLinkRowHtml());
+}
+
+function readFooterLinkRows(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .banner-card-row`)].map(row => ({
+    label: row.querySelector('.footer-link-label').value,
+    url: row.querySelector('.footer-link-url').value
+  }));
+}
+
+async function loadFooter() {
+  const f = await apiFetch('/api/cms/footer');
+  document.getElementById('footerAddress').value = f.address || '';
+  document.getElementById('footerPhone').value = f.phone || '';
+  document.getElementById('footerEmail').value = f.email || '';
+  document.getElementById('footerDescription').value = f.description || '';
+  document.getElementById('footerLine1').value = f.delivery_line1 || '';
+  document.getElementById('footerLine2').value = f.delivery_line2 || '';
+  document.getElementById('footerLine3').value = f.delivery_line3 || '';
+  document.getElementById('footerHighlight').value = f.delivery_highlight || '';
+  const help = f.help_links || [];
+  [1, 2, 3].forEach(i => {
+    document.getElementById(`footerHelp${i}Label`).value = (help[i - 1] && help[i - 1].label) || '';
+    document.getElementById(`footerHelp${i}Url`).value = (help[i - 1] && help[i - 1].url) || '';
+  });
+  document.getElementById('footerBusinessLinks').innerHTML = (f.business_links || []).map(footerLinkRowHtml).join('');
+}
+
+async function saveFooter() {
+  const helpLinks = [1, 2, 3]
+    .map(i => ({
+      label: document.getElementById(`footerHelp${i}Label`).value,
+      url: document.getElementById(`footerHelp${i}Url`).value
+    }))
+    .filter(l => l.label.trim());
+  await apiFetch('/api/cms/footer', {
+    method: 'PUT',
+    body: JSON.stringify({
+      address: document.getElementById('footerAddress').value,
+      phone: document.getElementById('footerPhone').value,
+      email: document.getElementById('footerEmail').value,
+      description: document.getElementById('footerDescription').value,
+      delivery_line1: document.getElementById('footerLine1').value,
+      delivery_line2: document.getElementById('footerLine2').value,
+      delivery_line3: document.getElementById('footerLine3').value,
+      delivery_highlight: document.getElementById('footerHighlight').value,
+      help_links: helpLinks,
+      business_links: readFooterLinkRows('footerBusinessLinks')
+    })
+  });
+  toast('Footer updated!');
+}
+
+/* ── Content Pages (Help & Support, FAQ, About Us, Delivery & Returns) ── */
+function textRowHtml(value, cls) {
+  return `
+    <div class="banner-card-row" style="padding:4px 0">
+      <input value="${value || ''}" style="flex:1;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px" class="${cls}">
+      <button class="btn-icon" style="color:#e53935" onclick="this.closest('.banner-card-row').remove()">×</button>
+    </div>`;
+}
+
+function paraRowHtml(value, cls) {
+  return `
+    <div class="banner-card-row" style="padding:4px 0;align-items:flex-start">
+      <textarea style="flex:1;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px;min-height:60px" class="${cls}">${value || ''}</textarea>
+      <button class="btn-icon" style="color:#e53935" onclick="this.closest('.banner-card-row').remove()">×</button>
+    </div>`;
+}
+
+function readRows(containerId, cls) {
+  return [...document.querySelectorAll(`#${containerId} .${cls}`)].map(el => el.value).filter(v => v.trim());
+}
+
+function faqItemRowHtml(question, answer) {
+  return `
+    <div class="banner-card-row" style="padding:6px 0;align-items:flex-start">
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <input placeholder="Question" value="${question || ''}" style="padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px" class="faq-question">
+        <textarea placeholder="Answer" style="padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px;min-height:50px" class="faq-answer">${answer || ''}</textarea>
+      </div>
+      <button class="btn-icon" style="color:#e53935" onclick="this.closest('.banner-card-row').remove()">×</button>
+    </div>`;
+}
+
+function addFaqItemRow() {
+  document.getElementById('faqItemsEditor').insertAdjacentHTML('beforeend', faqItemRowHtml('', ''));
+}
+
+function readFaqItems() {
+  return [...document.querySelectorAll('#faqItemsEditor .banner-card-row')].map(row => ({
+    question: row.querySelector('.faq-question').value,
+    answer: row.querySelector('.faq-answer').value
+  })).filter(i => i.question.trim());
+}
+
+function valueRowHtml(icon, title, body) {
+  return `
+    <div class="banner-card-row" style="padding:6px 0">
+      <input placeholder="Icon" value="${icon || ''}" style="width:40px;padding:6px;border:1px solid #eee;border-radius:5px;text-align:center;font-size:14px" class="value-icon">
+      <input placeholder="Title" value="${title || ''}" style="flex:1;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px" class="value-title">
+      <input placeholder="Body" value="${body || ''}" style="flex:2;padding:6px 8px;border:1px solid #eee;border-radius:5px;font-size:11px" class="value-body">
+      <button class="btn-icon" style="color:#e53935" onclick="this.closest('.banner-card-row').remove()">×</button>
+    </div>`;
+}
+
+function addAboutValueRow() {
+  document.getElementById('aboutValuesEditor').insertAdjacentHTML('beforeend', valueRowHtml('', '', ''));
+}
+
+function readAboutValues() {
+  return [...document.querySelectorAll('#aboutValuesEditor .banner-card-row')].map(row => ({
+    icon: row.querySelector('.value-icon').value,
+    title: row.querySelector('.value-title').value,
+    body: row.querySelector('.value-body').value
+  })).filter(v => v.title.trim());
+}
+
+function addAboutParagraphRow() {
+  document.getElementById('aboutStoryEditor').insertAdjacentHTML('beforeend', paraRowHtml('', 'about-para'));
+}
+
+function addDrParagraphRow() {
+  document.getElementById('drParagraphsEditor').insertAdjacentHTML('beforeend', paraRowHtml('', 'dr-para'));
+}
+
+function addDrBulletRow() {
+  document.getElementById('drBulletsEditor').insertAdjacentHTML('beforeend', textRowHtml('', 'dr-bullet'));
+}
+
+async function loadPagesCms() {
+  const help = await apiFetch('/api/cms/help_support_page');
+  document.getElementById('helpIntro').value = help.intro || '';
+
+  const faq = await apiFetch('/api/cms/faq_page');
+  document.getElementById('faqIntro').value = faq.intro || '';
+  document.getElementById('faqItemsEditor').innerHTML = (faq.items || []).map(i => faqItemRowHtml(i.question, i.answer)).join('');
+
+  const about = await apiFetch('/api/cms/about_us_page');
+  document.getElementById('aboutIntroInput').value = about.intro || '';
+  document.getElementById('aboutStoryEditor').innerHTML = (about.story_paragraphs || []).map(p => paraRowHtml(p, 'about-para')).join('');
+  document.getElementById('aboutValuesEditor').innerHTML = (about.values || []).map(v => valueRowHtml(v.icon, v.title, v.body)).join('');
+
+  const dr = await apiFetch('/api/cms/delivery_returns_page');
+  document.getElementById('drIntro').value = dr.intro || '';
+  document.getElementById('drParagraphsEditor').innerHTML = (dr.returns_paragraphs || []).map(p => paraRowHtml(p, 'dr-para')).join('');
+  document.getElementById('drBulletsEditor').innerHTML = (dr.returns_bullets || []).map(b => textRowHtml(b, 'dr-bullet')).join('');
+}
+
+async function saveHelpSupportPage() {
+  await apiFetch('/api/cms/help_support_page', {
+    method: 'PUT',
+    body: JSON.stringify({ intro: document.getElementById('helpIntro').value })
+  });
+  toast('Help & Support page updated!');
+}
+
+async function saveFaqPage() {
+  await apiFetch('/api/cms/faq_page', {
+    method: 'PUT',
+    body: JSON.stringify({ intro: document.getElementById('faqIntro').value, items: readFaqItems() })
+  });
+  toast('FAQ page updated!');
+}
+
+async function saveAboutPage() {
+  await apiFetch('/api/cms/about_us_page', {
+    method: 'PUT',
+    body: JSON.stringify({
+      intro: document.getElementById('aboutIntroInput').value,
+      story_paragraphs: readRows('aboutStoryEditor', 'about-para'),
+      values: readAboutValues()
+    })
+  });
+  toast('About Us page updated!');
+}
+
+async function saveDeliveryReturnsPage() {
+  await apiFetch('/api/cms/delivery_returns_page', {
+    method: 'PUT',
+    body: JSON.stringify({
+      intro: document.getElementById('drIntro').value,
+      returns_paragraphs: readRows('drParagraphsEditor', 'dr-para'),
+      returns_bullets: readRows('drBulletsEditor', 'dr-bullet')
+    })
+  });
+  toast('Delivery & Returns page updated!');
+}
+
+async function loadSeo() {
+  const s = await apiFetch('/api/cms/seo_homepage');
+  document.getElementById('seoTitle').value = s.title || '';
+  document.getElementById('seoDescription').value = s.description || '';
+  document.getElementById('seoKeywords').value = s.keywords || '';
+}
+
+async function saveSeo() {
+  await apiFetch('/api/cms/seo_homepage', {
+    method: 'PUT',
+    body: JSON.stringify({
+      title: document.getElementById('seoTitle').value,
+      description: document.getElementById('seoDescription').value,
+      keywords: document.getElementById('seoKeywords').value
+    })
+  });
+  toast('SEO meta saved!');
+}
+
+/* ── SETTINGS ── */
+async function loadAllSettings() {
+  await Promise.all([loadStoreSettings(), loadDeliverySettings(), loadNotificationSettings(), loadPaymentSettings()]);
+}
+
+async function loadStoreSettings() {
+  const s = await apiFetch('/api/settings/store');
+  document.getElementById('setStoreName').value = s.store_name || '';
+  document.getElementById('setStoreUrl').value = s.store_url || '';
+  document.getElementById('setContactEmail').value = s.contact_email || '';
+  document.getElementById('setWhatsapp').value = s.whatsapp_support || '';
+  document.getElementById('setCurrency').value = s.currency || 'GBP';
+}
+async function saveStoreSettings() {
+  await apiFetch('/api/settings/store', {
+    method: 'PUT',
+    body: JSON.stringify({
+      store_name: document.getElementById('setStoreName').value,
+      store_url: document.getElementById('setStoreUrl').value,
+      contact_email: document.getElementById('setContactEmail').value,
+      whatsapp_support: document.getElementById('setWhatsapp').value,
+      currency: document.getElementById('setCurrency').value
+    })
+  });
+  toast('Settings saved!');
+}
+
+async function loadDeliverySettings() {
+  const s = await apiFetch('/api/settings/delivery');
+  document.getElementById('setFreeThreshold').value = s.free_delivery_threshold ?? '';
+  document.getElementById('setStandardFee').value = s.standard_fee ?? '';
+  document.getElementById('setExpressFee').value = s.express_fee ?? '';
+  document.getElementById('setWeekendFee').value = s.weekend_fee ?? '';
+  document.getElementById('setCutoff').value = s.next_day_cutoff || '';
+}
+async function saveDeliverySettings() {
+  await apiFetch('/api/settings/delivery', {
+    method: 'PUT',
+    body: JSON.stringify({
+      free_delivery_threshold: parseFloat(document.getElementById('setFreeThreshold').value) || 0,
+      standard_fee: parseFloat(document.getElementById('setStandardFee').value) || 0,
+      express_fee: parseFloat(document.getElementById('setExpressFee').value) || 0,
+      weekend_fee: parseFloat(document.getElementById('setWeekendFee').value) || 0,
+      next_day_cutoff: document.getElementById('setCutoff').value
+    })
+  });
+  toast('Delivery settings saved!');
+}
+
+async function loadNotificationSettings() {
+  const s = await apiFetch('/api/settings/notifications');
+  document.getElementById('notifNewOrder').checked = !!s.new_order_email;
+  document.getElementById('notifLowStock').checked = !!s.low_stock_alert;
+  document.getElementById('notifReturn').checked = !!s.return_request_alert;
+  document.getElementById('notifDaily').checked = !!s.daily_sales_summary;
+}
+async function saveNotificationSettings() {
+  await apiFetch('/api/settings/notifications', {
+    method: 'PUT',
+    body: JSON.stringify({
+      new_order_email: document.getElementById('notifNewOrder').checked,
+      low_stock_alert: document.getElementById('notifLowStock').checked,
+      return_request_alert: document.getElementById('notifReturn').checked,
+      daily_sales_summary: document.getElementById('notifDaily').checked
+    })
+  });
+  toast('Notification settings saved!');
+}
+
+async function loadPaymentSettings() {
+  const s = await apiFetch('/api/settings/payments');
+  document.getElementById('payStripe').checked = !!s.stripe_connected;
+  document.getElementById('payPaypal').checked = !!s.paypal_connected;
+  document.getElementById('stripeStatus').textContent = s.stripe_connected ? 'Connected' : 'Not connected';
+  document.getElementById('stripeStatus').style.color = s.stripe_connected ? '#2e7d32' : '#888';
+  document.getElementById('paypalStatus').textContent = s.paypal_connected ? 'Connected' : 'Not connected';
+  document.getElementById('paypalStatus').style.color = s.paypal_connected ? '#2e7d32' : '#888';
+  document.getElementById('klarnaStatus').textContent = s.klarna_connected ? 'Connected' : 'Not connected';
+  document.getElementById('klarnaStatus').style.color = s.klarna_connected ? '#2e7d32' : '#888';
+}
+async function savePaymentSettings() {
+  // Only ever persists boolean "connected" flags — no real Stripe/PayPal API calls are made.
+  await apiFetch('/api/settings/payments', {
+    method: 'PUT',
+    body: JSON.stringify({
+      stripe_connected: document.getElementById('payStripe').checked,
+      paypal_connected: document.getElementById('payPaypal').checked,
+      klarna_connected: false
+    })
+  });
+  loadPaymentSettings();
+}
+
+/* ── UTILS ── */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function toast(msg) { const t = document.getElementById('toastEl'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
+
+/* ── INIT ── */
+(async function init() {
+  await checkSession();
+  await ensureCategories();
+  await loadDashboard();
+})();
+</script>
+</body>
+</html>

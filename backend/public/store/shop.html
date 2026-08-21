@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shop All Products — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+<style>
+  .shop-layout{display:grid;grid-template-columns:1fr;gap:24px;padding:28px 0 50px}
+  @media (min-width:900px){ .shop-layout{grid-template-columns:220px 1fr} }
+  .filter-group{margin-bottom:22px}
+  .filter-group h4{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:10px}
+  .filter-chip{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;transition:background .15s var(--ease)}
+  .filter-chip:hover{background:var(--pri-lt)}
+  .filter-chip.act{background:var(--pri-lt);color:var(--pri-dk)}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .toolbar select{padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);font-size:13px;outline:none}
+</style>
+</head>
+<body>
+<div id="siteHeader"></div>
+
+<main class="container">
+  <div class="shop-layout">
+    <aside>
+      <div class="filter-group">
+        <h4>Categories</h4>
+        <div id="categoryFilters"></div>
+      </div>
+    </aside>
+    <div>
+      <div class="toolbar">
+        <span id="resultCount" style="font-size:13px;color:var(--muted)"></span>
+        <select id="sortSelect">
+          <option value="name">Sort: Name</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
+      </div>
+      <div class="product-grid" id="productGrid"></div>
+    </div>
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+let activeCategory = params.get('category') || '';
+const activeTag = params.get('tag') || '';
+const activeSearch = params.get('search') || '';
+
+function productCardHtml(p) {
+  const priceHtml = p.hasVariations
+    ? `<span class="price">From ${money(p.priceMin)}</span>`
+    : `<span class="price">${money(p.price)}</span>${p.compareAtPrice ? `<span class="price-old">${money(p.compareAtPrice)}</span>` : ''}`;
+  const outOfStock = p.stockTotal === 0;
+  return `
+    <a href="/store/product.html?id=${p.id}" class="product-card">
+      <div class="thumb">
+        ${p.image ? `<img src="${p.image}" loading="lazy">` : p.emoji}
+        ${p.isNew ? '<span class="badge">New</span>' : ''}
+      </div>
+      <div class="body">
+        <div class="name">${p.name}</div>
+        <div class="price-row">${priceHtml}</div>
+        <button class="add-btn" ${outOfStock ? 'disabled' : ''} onclick="event.preventDefault();quickAdd(${p.id},${p.hasVariations})">
+          ${outOfStock ? 'Out of Stock' : (p.hasVariations ? 'Choose Options' : 'Add To Cart')}
+        </button>
+      </div>
+    </a>`;
+}
+
+function quickAdd(productId, hasVariations) {
+  if (hasVariations) { location.href = `/store/product.html?id=${productId}`; return; }
+  addItem(productId, null, 1);
+  toast('Added to cart');
+}
+
+async function loadCategoryFilters() {
+  const cats = await apiFetch('/api/storefront/categories');
+  const el = document.getElementById('categoryFilters');
+  const renderChips = () => {
+    el.innerHTML = `<a class="filter-chip ${!activeCategory ? 'act' : ''}" href="/store/shop.html">All Products</a>` +
+      cats.map(c => `<a class="filter-chip ${activeCategory === c.slug ? 'act' : ''}" href="/store/shop.html?category=${c.slug}">${c.emoji} ${c.name}</a>`).join('');
+  };
+  renderChips();
+}
+
+async function loadProducts() {
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = Array(8).fill('<div class="skeleton" style="height:220px"></div>').join('');
+  const query = { sort: document.getElementById('sortSelect').value };
+  if (activeCategory) query.category = activeCategory;
+  if (activeTag) query.tag = activeTag;
+  if (activeSearch) query.search = activeSearch;
+  try {
+    const products = await apiFetch('/api/storefront/products?' + new URLSearchParams(query));
+    document.getElementById('resultCount').textContent = `${products.length} product${products.length === 1 ? '' : 's'}`;
+    grid.innerHTML = products.map(productCardHtml).join('') || '<div class="empty-state"><div class="ic">🔍</div>No products match your filters</div>';
+  } catch {
+    grid.innerHTML = '<div class="empty-state">Unable to load products</div>';
+  }
+}
+
+document.getElementById('sortSelect').addEventListener('change', loadProducts);
+loadCategoryFilters();
+loadProducts();
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Create Account — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+</head>
+<body>
+<div id="siteHeader"></div>
+
+<main class="container" style="padding:50px 0 70px">
+  <div class="form-card">
+    <h1 style="font-size:22px;text-align:center;margin-bottom:6px">Create Your Account</h1>
+    <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:24px">Join Ennys for faster checkout and order tracking</p>
+    <div class="form-error" id="formError"></div>
+    <form id="registerForm">
+      <div class="fg"><label>Full Name</label><input id="name" required autocomplete="name"></div>
+      <div class="fg"><label>Email</label><input type="email" id="email" required autocomplete="email"></div>
+      <div class="fg"><label>Password (min. 6 characters)</label><input type="password" id="password" required minlength="6" autocomplete="new-password"></div>
+      <button type="submit" class="btn btn-pri btn-full">Create Account →</button>
+    </form>
+    <p class="form-note">Already have an account? <a href="/store/login.html">Log in</a></p>
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+(async () => {
+  const session = await fetch('/api/account/session', { credentials: 'include' }).then(r => r.json()).catch(() => ({}));
+  if (session.loggedIn) location.href = '/store/account.html';
+})();
+
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('formError');
+  errEl.classList.remove('show');
+  const res = await fetch('/api/account/register', {
+    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: document.getElementById('name').value,
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value
+    })
+  });
+  if (res.ok) {
+    const next = new URLSearchParams(location.search).get('next') || '/store/account.html';
+    location.href = next;
+  } else {
+    const data = await res.json().catch(() => ({}));
+    errEl.textContent = data.error || 'Registration failed';
+    errEl.classList.add('show');
+  }
+});
+</script>
+</body>
+</html>

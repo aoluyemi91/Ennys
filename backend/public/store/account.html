@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My Account — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+<style>
+  .order-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .order-row .num{font-weight:800;color:var(--pri)}
+</style>
+</head>
+<body>
+<div id="siteHeader"></div>
+
+<main class="container" style="padding:28px 0 60px;max-width:760px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <h1 style="font-size:26px">My Account</h1>
+    <button class="btn btn-outline btn-sm" onclick="logout()">Log Out</button>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn act" onclick="showTab('orders', this)">Order History</button>
+    <button class="tab-btn" onclick="showTab('profile', this)">Profile &amp; Address</button>
+    <button class="tab-btn" onclick="showTab('password', this)">Change Password</button>
+  </div>
+
+  <div id="tab-orders">
+    <div id="ordersList"><div class="skeleton" style="height:80px;margin-bottom:10px"></div></div>
+  </div>
+
+  <div id="tab-profile" style="display:none">
+    <div class="form-error" id="profileError"></div>
+    <div class="fg"><label>Full Name</label><input id="pName"></div>
+    <div class="fg"><label>Phone</label><input id="pPhone"></div>
+    <div class="fg"><label>Address Line 1</label><input id="pAddr1"></div>
+    <div class="fg"><label>Address Line 2</label><input id="pAddr2"></div>
+    <div class="form-row">
+      <div class="fg"><label>City</label><input id="pCity"></div>
+      <div class="fg"><label>Postcode</label><input id="pPostcode"></div>
+    </div>
+    <button class="btn btn-pri" onclick="saveProfile()">Save Changes</button>
+  </div>
+
+  <div id="tab-password" style="display:none">
+    <div class="form-error" id="passwordError"></div>
+    <div class="fg"><label>Current Password</label><input type="password" id="currentPassword"></div>
+    <div class="fg"><label>New Password</label><input type="password" id="newPassword"></div>
+    <button class="btn btn-pri" onclick="changePassword()">Update Password</button>
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+function showTab(name, btn) {
+  ['orders', 'profile', 'password'].forEach(t => document.getElementById(`tab-${t}`).style.display = t === name ? 'block' : 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('act'));
+  btn.classList.add('act');
+}
+
+async function logout() {
+  await apiFetch('/api/account/logout', { method: 'POST' });
+  location.href = '/';
+}
+
+async function loadOrders() {
+  const orders = await apiFetch('/api/account/orders');
+  document.getElementById('ordersList').innerHTML = orders.map(o => `
+    <div class="order-row">
+      <div><span class="num">${o.order_number}</span><div style="color:var(--muted);font-size:12px">${new Date(o.created_at).toLocaleDateString('en-GB')}</div></div>
+      <div style="text-align:right"><span class="badge-pill badge-in">${o.status}</span><div style="font-weight:700;margin-top:4px">${money(o.total)}</div></div>
+    </div>
+  `).join('') || '<div class="empty-state"><div class="ic">📦</div>No orders yet<br><a href="/store/shop.html" class="btn btn-pri" style="margin-top:16px">Start Shopping</a></div>';
+}
+
+async function loadProfile() {
+  const p = await apiFetch('/api/account/profile');
+  document.getElementById('pName').value = p.name || '';
+  document.getElementById('pPhone').value = p.phone || '';
+  document.getElementById('pAddr1').value = p.addressLine1 || '';
+  document.getElementById('pAddr2').value = p.addressLine2 || '';
+  document.getElementById('pCity').value = p.city || '';
+  document.getElementById('pPostcode').value = p.postcode || '';
+}
+
+async function saveProfile() {
+  try {
+    await apiFetch('/api/account/profile', {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: document.getElementById('pName').value,
+        phone: document.getElementById('pPhone').value,
+        addressLine1: document.getElementById('pAddr1').value,
+        addressLine2: document.getElementById('pAddr2').value,
+        city: document.getElementById('pCity').value,
+        postcode: document.getElementById('pPostcode').value
+      })
+    });
+    toast('Profile updated!');
+  } catch (e) {
+    document.getElementById('profileError').textContent = e.message;
+    document.getElementById('profileError').classList.add('show');
+  }
+}
+
+async function changePassword() {
+  const errEl = document.getElementById('passwordError');
+  errEl.classList.remove('show');
+  try {
+    await apiFetch('/api/account/password', {
+      method: 'PUT',
+      body: JSON.stringify({
+        currentPassword: document.getElementById('currentPassword').value,
+        newPassword: document.getElementById('newPassword').value
+      })
+    });
+    toast('Password updated!');
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.classList.add('show');
+  }
+}
+
+(async () => {
+  const session = await apiFetch('/api/account/session');
+  if (!session || !session.loggedIn) { location.href = '/store/login.html?next=/store/account.html'; return; }
+  loadOrders();
+  loadProfile();
+})();
+</script>
+</body>
+</html>

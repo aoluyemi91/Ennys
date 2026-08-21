@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Product — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+<style>
+  .pdp{display:grid;grid-template-columns:1fr;gap:32px;padding:30px 0 60px}
+  @media (min-width:900px){ .pdp{grid-template-columns:1fr 1fr} }
+  .pdp-gallery-main{aspect-ratio:1;border-radius:var(--radius-md);background:#f4f1ec;display:flex;align-items:center;justify-content:center;font-size:100px;overflow:hidden;box-shadow:var(--shadow-sm)}
+  .pdp-gallery-main img{width:100%;height:100%;object-fit:cover}
+  .pdp-thumbs{display:flex;gap:8px;margin-top:10px}
+  .pdp-thumbs img{width:64px;height:64px;object-fit:cover;border-radius:var(--radius-sm);cursor:pointer;border:2px solid transparent;transition:border-color .15s var(--ease)}
+  .pdp-thumbs img.act{border-color:var(--pri)}
+  .breadcrumb{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+  .breadcrumb a:hover{color:var(--pri)}
+  .pdp-price-row{display:flex;align-items:baseline;gap:12px;margin:14px 0}
+  .pdp-price{font-size:30px;font-weight:800;color:var(--pri)}
+  .pdp-price-old{font-size:16px;color:#bbb;text-decoration:line-through}
+  .pdp-desc{color:var(--ink-soft);font-size:14.5px;margin-bottom:22px}
+  .qty-row{display:flex;align-items:center;gap:14px;margin:20px 0}
+</style>
+</head>
+<body>
+<div id="siteHeader"></div>
+
+<main class="container">
+  <div class="breadcrumb"><a href="/">Home</a> / <a href="/store/shop.html">Shop</a> / <span id="crumbName"></span></div>
+  <div class="pdp" id="pdpContent">
+    <div><div class="skeleton" style="aspect-ratio:1;border-radius:var(--radius-md)"></div></div>
+    <div><div class="skeleton" style="height:32px;width:60%;margin-bottom:14px"></div><div class="skeleton" style="height:80px"></div></div>
+  </div>
+
+  <section class="section" id="recommendedSection" style="display:none">
+    <div class="section-head"><h2>You Might Also Like</h2></div>
+    <div class="product-grid" id="recommendedGrid"></div>
+  </section>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/variationMatch.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+let PRODUCT = null;
+const productId = new URLSearchParams(location.search).get('id');
+
+function renderGallery(images, emoji) {
+  const main = images[0]
+    ? `<img id="mainImage" src="${images[0]}">`
+    : `<div id="mainImage" style="font-size:100px">${emoji}</div>`;
+  const thumbs = images.length > 1
+    ? `<div class="pdp-thumbs">${images.map((img, i) => `<img src="${img}" class="${i === 0 ? 'act' : ''}" onclick="switchImage('${img}', this)">`).join('')}</div>`
+    : '';
+  return `<div class="pdp-gallery-main">${main}</div>${thumbs}`;
+}
+
+function switchImage(url, el) {
+  const main = document.getElementById('mainImage');
+  if (main.tagName === 'IMG') main.src = url;
+  el.parentElement.querySelectorAll('img').forEach(i => i.classList.remove('act'));
+  el.classList.add('act');
+}
+
+function renderSelectors(p) {
+  return p.attributeNames.map(name => {
+    const values = [...new Set(p.variations.map(v => v.attributes[name]).filter(Boolean))];
+    return `
+      <div class="fg">
+        <label>${name}</label>
+        <select id="attr-${name}" onchange="updateVariation()">
+          ${values.map(v => `<option value="${v}">${v}</option>`).join('')}
+        </select>
+      </div>`;
+  }).join('');
+}
+
+async function render() {
+  if (!productId) { document.getElementById('pdpContent').innerHTML = '<div class="empty-state">Product not found</div>'; return; }
+  let p;
+  try {
+    p = await apiFetch(`/api/storefront/products/${productId}`);
+  } catch {
+    document.getElementById('pdpContent').innerHTML = '<div class="empty-state">Product not found</div>';
+    return;
+  }
+  PRODUCT = p;
+  document.title = `${p.name} — Ennys`;
+  document.getElementById('crumbName').textContent = p.name;
+
+  const priceBlock = p.hasVariations
+    ? `<div class="pdp-price-row"><span class="pdp-price" id="pdpPrice"></span><span class="pdp-price-old" id="pdpOldPrice"></span></div>`
+    : `<div class="pdp-price-row"><span class="pdp-price">${money(p.price)}</span>${p.compareAtPrice ? `<span class="pdp-price-old">${money(p.compareAtPrice)}</span>` : ''}</div>`;
+
+  document.getElementById('pdpContent').innerHTML = `
+    <div>${renderGallery(p.images, p.emoji)}</div>
+    <div>
+      <h1 style="font-size:26px;margin-bottom:6px">${p.name}</h1>
+      ${priceBlock}
+      <div id="pdpStock" style="margin-bottom:16px"></div>
+      <p class="pdp-desc">${p.shortDescription || p.fullDescription || ''}</p>
+      ${p.hasVariations ? `<div style="display:grid;gap:14px;margin-bottom:6px">${renderSelectors(p)}</div>` : ''}
+      <div class="qty-row">
+        <span style="font-weight:700;font-size:13px">Quantity</span>
+        <div class="qty-stepper">
+          <button onclick="stepQty(-1)">−</button><span id="qtyVal">1</span><button onclick="stepQty(1)">+</button>
+        </div>
+      </div>
+      <button class="btn btn-pri btn-full" id="addToCartBtn" onclick="addToCart()">Add to Cart</button>
+    </div>
+  `;
+
+  if (p.hasVariations) {
+    const def = p.variations.find(v => v.id === p.defaultVariationId) || p.variations[0];
+    p.attributeNames.forEach(name => {
+      const select = document.getElementById(`attr-${name}`);
+      if (select && def.attributes[name] != null) select.value = def.attributes[name];
+    });
+    updateVariation();
+  } else {
+    setStockUI(p.stock);
+  }
+}
+
+let qty = 1;
+function stepQty(delta) {
+  qty = Math.max(1, qty + delta);
+  document.getElementById('qtyVal').textContent = qty;
+}
+
+function setStockUI(stock) {
+  const stockEl = document.getElementById('pdpStock');
+  const btn = document.getElementById('addToCartBtn');
+  if (stock > 0) {
+    stockEl.innerHTML = `<span class="badge-pill badge-in">In Stock (${stock} left)</span>`;
+    btn.disabled = false; btn.textContent = 'Add to Cart';
+  } else {
+    stockEl.innerHTML = `<span class="badge-pill badge-out">Out of Stock</span>`;
+    btn.disabled = true; btn.textContent = 'Out of Stock';
+  }
+}
+
+let currentVariation = null;
+function updateVariation() {
+  const selected = PRODUCT.attributeNames.map(name => ({ name, value: document.getElementById(`attr-${name}`).value }));
+  currentVariation = findMatchingVariation(PRODUCT, selected);
+  const priceEl = document.getElementById('pdpPrice');
+  const oldPriceEl = document.getElementById('pdpOldPrice');
+  if (!currentVariation) {
+    priceEl.textContent = '—';
+    oldPriceEl.textContent = '';
+    document.getElementById('pdpStock').innerHTML = `<span class="badge-pill badge-out">Unavailable</span>`;
+    document.getElementById('addToCartBtn').disabled = true;
+    return;
+  }
+  priceEl.textContent = money(currentVariation.price);
+  oldPriceEl.textContent = currentVariation.compareAtPrice ? money(currentVariation.compareAtPrice) : '';
+  setStockUI(currentVariation.stock);
+}
+
+function addToCart() {
+  if (PRODUCT.hasVariations && !currentVariation) { toast('Please select all options'); return; }
+  addItem(PRODUCT.id, currentVariation ? currentVariation.id : null, qty);
+  toast('Added to cart');
+}
+
+function recommendedCardHtml(p) {
+  const priceHtml = p.hasVariations
+    ? `<span class="price">From ${money(p.priceMin)}</span>`
+    : `<span class="price">${money(p.price)}</span>${p.compareAtPrice ? `<span class="price-old">${money(p.compareAtPrice)}</span>` : ''}`;
+  return `
+    <a href="/store/product.html?id=${p.id}" class="product-card">
+      <div class="thumb">
+        ${p.image ? `<img src="${p.image}" loading="lazy">` : p.emoji}
+        ${p.isNew ? '<span class="badge">New</span>' : ''}
+      </div>
+      <div class="body">
+        <div class="name">${p.name}</div>
+        <div class="price-row">${priceHtml}</div>
+        <button class="add-btn" onclick="event.preventDefault();quickAddRecommended(${p.id},${p.hasVariations})">
+          ${p.hasVariations ? 'Choose Options' : 'Add To Cart'}
+        </button>
+      </div>
+    </a>`;
+}
+
+function quickAddRecommended(productId, hasVariations) {
+  if (hasVariations) { location.href = `/store/product.html?id=${productId}`; return; }
+  addItem(productId, null, 1);
+  toast('Added to cart');
+}
+
+// Complementary products: same category as this one, in stock, excluding itself.
+async function loadRecommendations(p) {
+  const category = (p.categories || [])[0];
+  if (!category) return;
+  let related;
+  try {
+    related = await apiFetch(`/api/storefront/products?category=${category.slug}`);
+  } catch {
+    return;
+  }
+  const filtered = related.filter(r => r.id !== p.id && r.stockTotal > 0).slice(0, 8);
+  if (filtered.length === 0) return;
+  document.getElementById('recommendedGrid').innerHTML = filtered.map(recommendedCardHtml).join('');
+  document.getElementById('recommendedSection').style.display = 'block';
+}
+
+render().then(() => { if (PRODUCT) loadRecommendations(PRODUCT); });
+</script>
+</body>
+</html>

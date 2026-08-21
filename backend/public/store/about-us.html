@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About Us — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ennys is Birmingham's premier Afro-Caribbean online superstore, delivering authentic flavours across the UK.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+</head>
+<body>
+
+<div id="siteHeader"></div>
+
+<main>
+  <section class="content-hero">
+    <div class="container">
+      <h1>About Ennys</h1>
+      <p id="aboutIntro"></p>
+    </div>
+  </section>
+
+  <section class="section container">
+    <div class="prose">
+      <section>
+        <h2>Our Story</h2>
+        <div id="aboutStory"></div>
+      </section>
+
+      <section>
+        <h2>What We Stand For</h2>
+        <div class="value-grid" id="aboutValues"></div>
+      </section>
+
+      <section>
+        <div class="contact-block">
+          <h3>Want to get in touch?</h3>
+          <p id="contactPhone"></p>
+          <p id="contactEmail"></p>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+apiFetch('/api/storefront/cms/about_us_page').then(p => {
+  document.getElementById('aboutIntro').textContent = p.intro || '';
+  document.getElementById('aboutStory').innerHTML = (p.story_paragraphs || []).map(t => `<p>${t}</p>`).join('');
+  document.getElementById('aboutValues').innerHTML = (p.values || []).map(v => `
+    <div class="value-card">
+      <div class="ic">${v.icon || ''}</div>
+      <h3>${v.title || ''}</h3>
+      <p>${v.body || ''}</p>
+    </div>
+  `).join('');
+}).catch(() => {});
+
+apiFetch('/api/storefront/cms/footer').then(f => {
+  document.getElementById('contactPhone').innerHTML = f.phone ? `📞 <a href="tel:${f.phone.replace(/\s+/g, '')}">${f.phone}</a>` : '';
+  document.getElementById('contactEmail').innerHTML = f.email ? `✉️ <a href="mailto:${f.email}">${f.email}</a>` : '';
+}).catch(() => {});
+</script>
+</body>
+</html>

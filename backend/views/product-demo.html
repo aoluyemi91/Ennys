@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ennys — Product Variation Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f5f7;color:#1a1a1a;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px}
+  .wrap{width:100%;max-width:480px}
+  .note{background:#fff3ec;border:1px solid #fdd5b8;color:#b84500;font-size:12px;font-weight:600;padding:10px 14px;border-radius:8px;margin-bottom:16px}
+  .picker{margin-bottom:20px}
+  .picker select{width:100%;padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;background:#fff;outline:none}
+  .card{background:#fff;border-radius:12px;border:1px solid #eee;padding:24px}
+  .emoji{font-size:48px;margin-bottom:10px}
+  .photo{width:100%;height:240px;object-fit:contain;background:#f4f5f7;border-radius:10px;margin-bottom:14px;display:block}
+  .name{font-size:18px;font-weight:800;margin-bottom:4px}
+  .desc{font-size:12px;color:#888;margin-bottom:18px;line-height:1.5}
+  .attr-row{margin-bottom:14px}
+  .attr-row label{display:block;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px}
+  .attr-row select{width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:13px;background:#fff;outline:none}
+  .attr-row select:focus{border-color:#e65c00}
+  .price-row{display:flex;align-items:baseline;gap:8px;margin:16px 0 8px}
+  .price{font-size:26px;font-weight:800;color:#e65c00}
+  .price-old{font-size:13px;color:#bbb;text-decoration:line-through}
+  .stock{font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px;display:inline-block;margin-bottom:16px}
+  .stock.in{background:#e8f5e9;color:#1b5e20}
+  .stock.out{background:#fce4ec;color:#c62828}
+  .stock.unavailable{background:#f5f5f5;color:#888}
+  button.basket{width:100%;background:#e65c00;color:#fff;border:none;padding:12px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+  button.basket:disabled{background:#ddd;color:#888;cursor:not-allowed}
+  .empty{text-align:center;color:#bbb;padding:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="note">Proof-of-concept demo page — not the real storefront. Shows how a customer picking a product variation (size, colour, etc.) sees the price and stock update live.</div>
+  <div class="picker">
+    <select id="productPicker" onchange="onProductChange()"><option value="">Choose a product…</option></select>
+  </div>
+  <div class="card" id="productCard">
+    <div class="empty">Pick a product above</div>
+  </div>
+</div>
+
+<script>
+let PRODUCTS = [];
+let CURRENT = null;
+
+async function init() {
+  const res = await fetch('/api/storefront/products');
+  PRODUCTS = await res.json();
+  const picker = document.getElementById('productPicker');
+  picker.innerHTML = '<option value="">Choose a product…</option>' + PRODUCTS.map(p =>
+    `<option value="${p.id}">${p.emoji} ${p.name}${p.hasVariations ? ' (variations)' : ''}</option>`
+  ).join('');
+}
+
+async function onProductChange() {
+  const id = document.getElementById('productPicker').value;
+  if (!id) {
+    document.getElementById('productCard').innerHTML = '<div class="empty">Pick a product above</div>';
+    CURRENT = null;
+    return;
+  }
+  const res = await fetch(`/api/storefront/products/${id}`);
+  CURRENT = await res.json();
+  renderProductCard();
+}
+
+function attributeKey(pairs) {
+  return pairs
+    .map(p => `${String(p.name).trim().toLowerCase()}:${String(p.value).trim().toLowerCase()}`)
+    .sort()
+    .join('|');
+}
+
+function renderProductCard() {
+  const p = CURRENT;
+  const photoHtml = p.images && p.images[0]
+    ? `<img class="photo" src="${p.images[0]}">`
+    : `<div class="emoji">${p.emoji}</div>`;
+
+  if (!p.hasVariations) {
+    document.getElementById('productCard').innerHTML = `
+      ${photoHtml}
+      <div class="name">${p.name}</div>
+      <div class="desc">${p.shortDescription || p.fullDescription || ''}</div>
+      <div class="price-row"><span class="price">£${Number(p.price).toFixed(2)}</span>${p.compareAtPrice ? `<span class="price-old">£${Number(p.compareAtPrice).toFixed(2)}</span>` : ''}</div>
+      <div class="stock ${p.stock > 0 ? 'in' : 'out'}">${p.stock > 0 ? `In Stock (${p.stock} left)` : 'Out of Stock'}</div>
+      <button class="basket" ${p.stock > 0 ? '' : 'disabled'}>${p.stock > 0 ? 'Add to Basket' : 'Out of Stock'}</button>
+    `;
+    return;
+  }
+
+  const selectorsHtml = p.attributeNames.map(name => {
+    const values = [...new Set(p.variations.map(v => v.attributes[name]).filter(Boolean))];
+    return `
+      <div class="attr-row">
+        <label>${name}</label>
+        <select id="attr-${name}" onchange="updateSelectedVariation()">
+          ${values.map(v => `<option value="${v}">${v}</option>`).join('')}
+        </select>
+      </div>`;
+  }).join('');
+
+  document.getElementById('productCard').innerHTML = `
+    ${photoHtml}
+    <div class="name">${p.name}</div>
+    <div class="desc">${p.shortDescription || p.fullDescription || ''}</div>
+    ${selectorsHtml}
+    <div class="price-row"><span class="price" id="variationPrice"></span><span class="price-old" id="variationOldPrice"></span></div>
+    <div class="stock" id="variationStock"></div>
+    <button class="basket" id="variationBasketBtn">Add to Basket</button>
+  `;
+
+  // Pre-select every dropdown to the default variation's attribute values.
+  const defaultVariation = p.variations.find(v => v.id === p.defaultVariationId) || p.variations[0];
+  p.attributeNames.forEach(name => {
+    const select = document.getElementById(`attr-${name}`);
+    if (select && defaultVariation.attributes[name] != null) select.value = defaultVariation.attributes[name];
+  });
+  updateSelectedVariation();
+}
+
+function updateSelectedVariation() {
+  const p = CURRENT;
+  const selected = p.attributeNames.map(name => ({ name, value: document.getElementById(`attr-${name}`).value }));
+  const key = attributeKey(selected);
+  const match = p.variations.find(v => v.key === key);
+
+  const priceEl = document.getElementById('variationPrice');
+  const oldPriceEl = document.getElementById('variationOldPrice');
+  const stockEl = document.getElementById('variationStock');
+  const btn = document.getElementById('variationBasketBtn');
+
+  if (!match) {
+    priceEl.textContent = '—';
+    oldPriceEl.textContent = '';
+    stockEl.textContent = 'This combination is currently unavailable';
+    stockEl.className = 'stock unavailable';
+    btn.disabled = true;
+    btn.textContent = 'Unavailable';
+    return;
+  }
+
+  priceEl.textContent = `£${Number(match.price).toFixed(2)}`;
+  oldPriceEl.textContent = match.compareAtPrice ? `£${Number(match.compareAtPrice).toFixed(2)}` : '';
+  if (match.stock > 0) {
+    stockEl.textContent = `In Stock (${match.stock} left)`;
+    stockEl.className = 'stock in';
+    btn.disabled = false;
+    btn.textContent = 'Add to Basket';
+  } else {
+    stockEl.textContent = 'Out of Stock';
+    stockEl.className = 'stock out';
+    btn.disabled = true;
+    btn.textContent = 'Out of Stock';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

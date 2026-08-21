@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your Cart — Ennys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/store/css/store.css">
+<style>
+  .promo-row{display:flex;gap:8px;margin-bottom:14px}
+  .promo-row input{flex:1;padding:11px 14px;border:1.5px solid var(--line);border-radius:var(--radius-sm);outline:none}
+  .delivery-opt{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+</style>
+</head>
+<body>
+<div id="siteHeader"></div>
+
+<main class="container" style="padding:28px 0 60px">
+  <h1 style="font-size:26px;margin-bottom:20px">Your Cart</h1>
+  <div class="two-col">
+    <div id="cartLines"></div>
+    <div class="summary-card" id="summaryCard" style="display:none">
+      <div class="promo-row">
+        <input type="text" id="promoInput" placeholder="Promo code">
+        <button class="btn btn-outline btn-sm" onclick="applyPromo()">Apply</button>
+      </div>
+      <div id="promoMsg" style="font-size:12.5px;margin-bottom:10px"></div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Delivery</div>
+        <div id="deliveryOptions"></div>
+      </div>
+      <div class="summary-row"><span>Subtotal</span><span id="sumSubtotal">£0.00</span></div>
+      <div class="summary-row"><span>Delivery</span><span id="sumDelivery">£0.00</span></div>
+      <div class="summary-row" id="sumDiscountRow" style="display:none"><span>Discount</span><span id="sumDiscount">-£0.00</span></div>
+      <div class="summary-row total"><span>Total</span><span id="sumTotal">£0.00</span></div>
+      <a href="/store/checkout.html" class="btn btn-pri btn-full" style="margin-top:14px">Proceed to Checkout →</a>
+    </div>
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/store/js/api.js"></script>
+<script src="/store/js/cart.js"></script>
+<script src="/store/js/layout.js"></script>
+<script>
+let LINE_DATA = [];
+let deliveryOptions = [];
+let selectedDelivery = 'Standard';
+let discount = { amount: 0, freeDelivery: false, code: null };
+
+async function loadCart() {
+  const cart = getCart();
+  const container = document.getElementById('cartLines');
+  if (cart.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="ic">🛒</div>Your cart is empty<br><a href="/store/shop.html" class="btn btn-pri" style="margin-top:16px">Start Shopping</a></div>`;
+    document.getElementById('summaryCard').style.display = 'none';
+    return;
+  }
+
+  LINE_DATA = [];
+  const linesHtml = [];
+  for (const line of cart) {
+    let product;
+    try { product = await apiFetch(`/api/storefront/products/${line.productId}`); } catch { continue; }
+    const variation = line.variationId ? product.variations.find(v => v.id === line.variationId) : null;
+    const price = variation ? variation.price : product.price;
+    const stock = variation ? variation.stock : product.stock;
+    const summary = variation ? Object.entries(variation.attributes).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
+    LINE_DATA.push({ productId: product.id, variationId: line.variationId, quantity: line.quantity, price, name: product.name, image: (product.images || [])[0], emoji: product.emoji, stock, summary });
+  }
+
+  document.getElementById('cartLines').innerHTML = LINE_DATA.map(l => `
+    <div class="cart-line">
+      <div class="thumb">${l.image ? `<img src="${l.image}">` : l.emoji}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13.5px">${l.name}</div>
+        ${l.summary ? `<div style="font-size:11.5px;color:var(--muted)">${l.summary}</div>` : ''}
+        <div style="font-weight:800;color:var(--pri);margin-top:4px">${money(l.price)}</div>
+        ${l.stock < l.quantity ? `<div style="font-size:11.5px;color:var(--danger);margin-top:2px">Only ${l.stock} left in stock</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="qty-stepper">
+          <button onclick="changeQty(${l.productId},${l.variationId || 'null'},${l.quantity - 1})">−</button>
+          <span>${l.quantity}</span>
+          <button onclick="changeQty(${l.productId},${l.variationId || 'null'},${l.quantity + 1})">+</button>
+        </div>
+        <button class="btn-icon" style="color:var(--danger);width:auto;height:auto;font-size:12px;font-weight:700" onclick="changeQty(${l.productId},${l.variationId || 'null'},0)">Remove</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('summaryCard').style.display = 'block';
+  await loadDeliveryOptions();
+  renderSummary();
+}
+
+function changeQty(productId, variationId, qty) {
+  updateQty(productId, variationId, qty);
+  loadCart();
+}
+
+async function loadDeliveryOptions() {
+  const res = await apiFetch('/api/storefront/delivery-options');
+  deliveryOptions = res.options;
+  const subtotal = LINE_DATA.reduce((s, l) => s + l.price * l.quantity, 0);
+  document.getElementById('deliveryOptions').innerHTML = deliveryOptions.map(o => {
+    const fee = subtotal >= res.freeDeliveryThreshold ? 0 : o.fee;
+    return `
+      <label class="delivery-opt">
+        <span><input type="radio" name="deliveryType" value="${o.type}" ${o.type === selectedDelivery ? 'checked' : ''} onchange="selectDelivery('${o.type}')"> ${o.label}</span>
+        <span>${fee === 0 ? 'FREE' : money(fee)}</span>
+      </label>`;
+  }).join('');
+}
+
+function selectDelivery(type) {
+  selectedDelivery = type;
+  renderSummary();
+}
+
+async function applyPromo() {
+  const code = document.getElementById('promoInput').value.trim();
+  const msgEl = document.getElementById('promoMsg');
+  if (!code) return;
+  const subtotal = LINE_DATA.reduce((s, l) => s + l.price * l.quantity, 0);
+  try {
+    const res = await fetch('/api/storefront/promo-preview', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, subtotal })
+    });
+    const data = await res.json();
+    if (!res.ok) { msgEl.style.color = 'var(--danger)'; msgEl.textContent = data.error; discount = { amount: 0, freeDelivery: false, code: null }; renderSummary(); return; }
+    discount = { amount: data.discountAmount, freeDelivery: data.freeDelivery, code: data.code };
+    msgEl.style.color = 'var(--sec-dk)';
+    msgEl.textContent = `Code "${data.code}" applied!`;
+    renderSummary();
+  } catch {
+    msgEl.style.color = 'var(--danger)';
+    msgEl.textContent = 'Unable to validate code';
+  }
+}
+
+function renderSummary() {
+  const subtotal = LINE_DATA.reduce((s, l) => s + l.price * l.quantity, 0);
+  const opt = deliveryOptions.find(o => o.type === selectedDelivery) || {};
+  let deliveryFee = subtotal >= 50 ? 0 : (opt.fee || 0);
+  if (discount.freeDelivery) deliveryFee = 0;
+  const total = Math.max(0, subtotal + deliveryFee - discount.amount);
+
+  document.getElementById('sumSubtotal').textContent = money(subtotal);
+  document.getElementById('sumDelivery').textContent = deliveryFee === 0 ? 'FREE' : money(deliveryFee);
+  document.getElementById('sumDiscountRow').style.display = discount.amount > 0 ? 'flex' : 'none';
+  document.getElementById('sumDiscount').textContent = '-' + money(discount.amount);
+  document.getElementById('sumTotal').textContent = money(total);
+
+  sessionStorage.setItem('ennys_checkout_meta', JSON.stringify({ deliveryType: selectedDelivery, promoCode: discount.code }));
+}
+
+loadCart();
+</script>
+</body>
+</html>
